@@ -1,0 +1,6 @@
+name = Ember
+description = Ember js
+package = Stayyourself
+core = 7.x
+
+dependencies[] = "libraries"

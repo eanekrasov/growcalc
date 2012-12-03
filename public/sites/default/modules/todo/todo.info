@@ -1,0 +1,8 @@
+name = TODO
+description = Implements interactive checklist.
+package = Stayyourself
+core = 7.x
+dependencies[] = node
+dependencies[] = entityreference
+
+files[] = todo.test

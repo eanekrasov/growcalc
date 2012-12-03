@@ -1,0 +1,155 @@
+<?php
+
+/**
+ * @file
+ * ...
+ */
+
+/**
+ * Implements hook_install().
+ */
+function growcalc_element_install() {
+// During installation, the t() function is unavailable, so we use get_t()
+  // to store the name of the translation function.
+  $t = get_t();
+
+  // We define the node type as an associative array.
+  $element_type = array(
+    'type' => 'growcalc_element',
+    'name' => $t('Element'),
+    // 'base' tells Drupal the base string for hook functions.
+    // This is often the module name; if base is set to 'mymodule', Drupal
+    // would call mymodule_insert() or similar for node hooks.
+    // In this case, we set base equal to 'node_content' so Drupal will handle
+    // our node as if we had designed it in the UI.
+    'base' => 'node_content',
+    'description' => $t('Basic chemical element.'),
+    'title_label' => $t('Symbol'),
+    'custom' => TRUE,
+  );
+
+  // Complete the node type definition by setting any defaults not explicitly
+  // declared above.
+  // http://api.drupal.org/api/function/node_type_set_defaults/7
+  $content_type = node_type_set_defaults($element_type);
+
+  //We add a body field and set the body label immediately.
+  //node_add_body_field($content_type, $t('Description'));
+
+
+
+  // Save the content type
+  node_type_save($content_type);
+
+  drupal_flush_all_caches();
+
+  // Create all the fields we are adding to our content type.
+  // http://api.drupal.org/api/function/field_create_field/7
+  foreach (_growcalc_element_installed_fields() as $field) {
+    field_create_field($field);
+  }
+
+  // Create all the instances for our fields.
+  // http://api.drupal.org/api/function/field_create_instance/7
+  foreach (_growcalc_element_installed_instances() as $instance) {
+    field_create_instance($instance);
+  }
+ 
+  field_purge_batch(1000);
+}
+
+function _growcalc_element_installed_fields() {
+  $t = get_t();
+  return array(
+    'growcalc_element' => array(
+      'field_name'  => 'growcalc_element',
+      'cardinality' => 1,
+      'type'        => 'entityreference',
+      'settings'    => array( 'target_type' => 'node', ),
+    ),
+
+    'growcalc_ions' => array(
+      'field_name'  => 'growcalc_ions',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'type'        => 'field_collection',
+      'settings'    => array(),
+    ),
+  );
+}
+
+function _growcalc_element_installed_instances() {
+  $t = get_t();
+  return array(
+    'growcalc_ions' => array(
+      'field_name'  => 'growcalc_ions',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_element',
+      'label'       => $t('Ions'),
+      'widget'      => array(
+        'type'      => 'field_collection_embed',
+      ),
+    ),
+    'growcalc_element' => array(
+      'field_name'  => 'growcalc_element',
+      'entity_type' => 'field_collection_item',
+      'bundle'      => 'growcalc_ions',
+      'label'       => $t('Growcalc element'),
+      'widget'      => array(
+        'type'      => 'options_select',
+      ),
+      'required' => TRUE,
+    ),
+    'count' => array(
+      'field_name'  => 'count',
+      'entity_type' => 'field_collection_item',
+      'bundle'      => 'growcalc_ions',
+      'label'       => $t('Count'),
+      'widget'      => array(
+        'type'      => 'number',
+      ),
+      'required' => TRUE,
+    ),
+  );
+}
+
+
+/*
+ * Implements hook_uninstall().
+ */
+function growcalc_element_uninstall() {
+  // Gather all the example content that might have been created while this
+  // module was enabled.  Simple selects still use db_query().
+  // http://api.drupal.org/api/function/db_query/7
+  $result = db_query('SELECT nid FROM {node} n WHERE n.type = :type', array(':type' => 'growcalc_element'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+
+  // Delete all the nodes at once
+  // http://api.drupal.org/api/function/node_delete_multiple/7
+  node_delete_multiple($nids);
+
+  // Loop over each of the fields defined by this module and delete
+  // all instances of the field, their data, and the field itself.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  foreach (array_keys(_growcalc_element_installed_fields()) as $field) {
+    //field_delete_field($field);
+  }
+
+  // Loop over any remaining field instances attached to the element
+  // content type (such as the body field) and delete them individually.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  $instances = field_info_instances('node', 'growcalc_element');
+  foreach ($instances as $instance_name => $instance) {
+    //field_delete_instance($instance);
+  }
+
+  // Delete our content type
+  // http://api.drupal.org/api/function/node_type_delete/7
+  node_type_delete('growcalc_element');
+
+  // Purge all field infromation
+  // http://api.drupal.org/api/function/field_purge_batch/7
+  field_purge_batch(1000);
+}

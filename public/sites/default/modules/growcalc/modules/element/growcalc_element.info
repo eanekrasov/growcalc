@@ -1,0 +1,15 @@
+name = Growcalc Element
+description = Provides "Element" node type
+core = 7.x
+
+package = GrowCalc
+
+dependencies[] = growcalc
+dependencies[] = entity
+dependencies[] = views
+dependencies[] = field_collection
+dependencies[] = entityreference
+dependencies[] = jquery_colorpicker
+
+files[] = growcalc_element.admin.inc
+files[] = views/growcalc_element.views.inc

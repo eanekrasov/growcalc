@@ -1,0 +1,248 @@
+<?php
+
+/**
+ * @file
+ * Module file for TODO module.
+ *
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ */
+function node_example_menu() {
+  $items['todo'] = array(
+    'page callback' => 'todo_page',
+    'access arguments' => array('access content'),
+    'title' => 'TODO',
+  );
+  return $items;
+}
+
+/**
+ * Callback that builds our content and returns it to the browser.
+ *
+ * This callback comes from hook_menu().
+ *
+ * @return
+ *   a build array
+ *   a renderable array showing a list of our nodes.
+ *
+ * @see node_load()
+ * @see node_view()
+ * @see node_example_field_formatter_view()
+ */
+function todo_page() {
+  // We'll start building a renderable array that will be our page.
+  // For now we just declare the array.
+  $renderable_array = array();
+  // We query the database and find all of the nodes for the type we defined.
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type AND n.status = :status';
+  $result = db_query($sql,
+    array(
+      ':type' => 'todo',
+      ':status' => 1,
+    )
+  );
+  $renderable_array['explanation'] = array(
+    '#markup' => t("TODO nodes you've created will be displayed here. Note that the color fields will be displayed differently in this list, than if you view the node normally. Click on the node title to see the difference. This is a result of using our 'todo_list' node view type."),
+    );
+  // Loop through each of our node_example nodes and instruct node_view
+  // to use our "example_node_list" view.
+  // http://api.drupal.org/api/function/node_load/7
+  // http://api.drupal.org/api/function/node_view/7
+  foreach ($result as $row) {
+    $node = node_load($row->nid);
+    $renderable_array['node_list'][]= node_view($node, 'todo_list');
+  }
+  return $renderable_array;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * We need to modify the default node entity info by adding a new view mode to
+ * be used in functions like node_view() or node_build_content().
+ */
+function todo_entity_info_alter(&$entity_info) {
+  // Add our new view mode to the list of view modes...
+  $entity_info['node']['view modes']['todo_list'] = array(
+    'label' => t('TODO List'),
+    'custom settings' => TRUE,
+  );
+}
+
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function todo_field_formatter_info() {
+  return array(
+    //'node_example_colors' => array(
+    //  'label' => t('Node Example Color Handle'),
+    //  'field types' => array('text'),
+    //),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * @todo: We need to provide a formatter for the colors that a user is allowed
+ * to enter during node creation.
+ */
+function todo_field_formatter_view($object_type, $object, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  switch ($display['type']) {
+    case 'todo_colors':
+      //foreach ($items as $delta => $item) {
+      //  $element[$delta]['#type'] = 'markup';
+      //  $color = $item['safe_value'];
+      //  $element[$delta]['#markup'] = theme('todo_color', array('color' => $color));
+      //}
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_help().
+ */
+function todo_help($path, $arg) {
+  switch ($path) {
+    case 'todo':
+      return "<p>" . t("The TODO module provides a custom node type.
+        You can create new TODO nodes using the <a href='!nodeadd'>node add form</a>.",
+        array('!nodeadd' => url('node/add/todo'))) . "</p>";
+  }
+}
+
+/**
+ * A custom theme function.
+ *
+ * By using this function to format our node-specific information, themes
+ * can override this presentation if they wish.  This is a simplifed theme
+ * function purely for illustrative purposes.
+ */
+//function theme_todo_color($variables) {
+//  $output = '<span style="background-color: #ccc; padding: 1em; margin-bottom: 1em; float: left; color: ' . $variables['color'] . '">' . $variables['color'] . '</span>';
+//  return $output;
+//}
+
+
+
+
+
+
+/**
+ * Implements hook_block_info().
+ *
+ */
+function todo_block_info() {
+  $blocks = array();
+
+  //$blocks['node_todo'] = array(
+  //  // info: The name of the block.
+  //  'info' => t('Node todo'),
+  //  // Block caching options (per role, per user, etc.)
+  //  //'cache' => DRUPAL_NO_CACHE,
+  //  'status' => TRUE,
+  //  'region' => 'sidebar_first',  // Not usually provided.
+  //  'visibility' => BLOCK_VISIBILITY_LISTED,  // Not usually provided.
+  //  'pages' => 'node/*', // Not usually provided here.
+  //);
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ *
+ */
+function todo_block_configure($delta = '') {
+  $form = array();
+  //if ($delta == 'node_todo') {
+  //}
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ *
+ */
+function todo_block_save($delta = '', $edit = array()) {
+  //if ($delta == 'node_todo') {
+  //}
+  return;
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ */
+function todo_block_view($delta = '') {
+  //switch ($delta) {
+    //case 'node_todo':
+    //  $block['subject'] = t('Node todo');
+    //  $block['content'] = todo_contents($delta);
+    //  break;
+  //}
+  return $block;
+}
+
+/**
+ * A module-defined block content function.
+ */
+function todo_contents($which_block) {
+  //switch ($which_block) {
+  //  case 'node_todo':
+  //    return array('#markup' => 'node todo');
+  //}
+}
+
+/**
+ * Implements hook_views_api().
+ * Used for enabling using templates inside my module
+ */
+function todo_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'todo') . '/views',
+    'template path' => drupal_get_path('module', 'todo'),
+  );
+}
+
+/**
+ * Implements hook_theme()
+ */
+function todo_theme() {
+  $theme = array();
+
+  return $theme;
+}
+
+
+/**
+ * Implements hook_theme_registry_alter()
+ */
+function todo_theme_registry_alter(&$theme_registry) {
+  $mod_path = drupal_get_path('module', 'todo');
+  $theme_registry_copy = $theme_registry;       // munge on a copy
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'pow', $mod_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('node');
+  foreach ($hooks as $h) {
+    _todo_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
+  }
+}
+
+/**
+ * Helper function for re-ordering arrays (needed by theme_registry_alter)
+ */
+function _todo_insert_after_first_element(&$a, $element) {
+  if(is_array($a)) {
+    $first_element = array_shift($a);
+    array_unshift($a, $first_element, $element);
+  }
+}

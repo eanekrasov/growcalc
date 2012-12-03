@@ -1,0 +1,89 @@
+<?php
+
+/**
+ * @file
+ * This is the file description for GrowCalc module.
+ *
+ *
+ * @author Coder
+ */
+
+
+/**
+ * Implements hook_permission()
+ */
+function growcalc_permission() {
+  $permissions = array(
+    'administer growcalc' => array(
+      'title' => t('Administer GrowCalc'),
+      'description' => t('Configure GrowCalc.')
+    ),
+  );
+  return $permissions;
+}
+
+/**
+ * Implements hook_menu()
+ */
+function growcalc_menu() {
+  $items['growcalc'] = array(
+    'title' => 'GrowCalc',
+    'page callback' => 'growcalc_info_page',
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/growcalc'] = array(
+    'title' => 'GrowCalc',
+    'description' => 'Configure GrowCalc.',
+    'access arguments' => array('administer growcalc'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('growcalc_settings'),
+    'file' => 'growcalc.admin.inc'
+  );
+
+  return $items;
+}
+
+/**
+ * Basic information for the page.
+ *
+ * @todo: Give links to admin pages, etc.
+ */
+function growcalc_info_page() {
+  $content[] = array(
+    '#type' => 'item',
+    '#markup' => t('Nothing here'),
+  );
+  
+  //$content['table'] = growcalc_element_program_list_entities();
+
+  return $content;
+}
+
+function growcalc_init() {
+  if (arg(0) !== 'admin') {
+    drupal_add_js('sites/all/libraries/raphael/raphael.js');
+    drupal_add_js('sites/all/libraries/sylvester/sylvester.js');
+
+
+    drupal_add_library('system', 'ui');
+    drupal_add_library('system', 'ui.autocomplete');
+    
+    drupal_add_js('sites/all/libraries/pnotify/jquery.pnotify.js');
+    drupal_add_css('sites/all/libraries/pnotify/jquery.pnotify.default.css');
+    drupal_add_css('sites/all/libraries/pnotify/jquery.pnotify.default.icons.css');
+
+
+    //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/raphael-ext.js');
+    //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/gceditor.js');
+    //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/structures.js');
+
+    drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/handlebars-1.0.0.beta.6.js');
+    drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/ember-1.0.pre.js');
+    drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.list-filter.js');
+    drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/ember-jquery-ui-mixin.js');
+
+    drupal_add_css(drupal_get_path('module', 'growcalc') . '/css/growcalc.css');
+    drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/growcalc.js');
+  }
+}

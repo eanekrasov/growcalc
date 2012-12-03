@@ -1,0 +1,14 @@
+name = Growcalc
+description = "Grow calculator."
+core = 7.x
+package = GrowCalc
+
+files[] = growcalc.install
+files[] = js/growcalc.js
+files[] = css/growcalc.css
+
+dependencies[] = number
+dependencies[] = jquery_update
+
+
+configure = admin/config/growcalc

@@ -1,0 +1,112 @@
+<?php
+
+/**
+ * @file
+ * Module file for Ember module.
+ *
+ */
+
+function ember_libraries_info() {
+  $libraries['ember'] = array(
+    // Only used in administrative UI of Libraries API.
+    'name' => 'Ember js',
+    'vendor url' => 'http://emberjs.com',
+    'download url' => 'http://emberjs.com/download',
+    // Optional: Define a custom version detection callback, if required.
+    'version callback' => 'ember_get_version',
+    // Specify arguments for the version callback. By default,
+    // libraries_get_version() takes a named argument array:
+    'version arguments' => array(
+      //'file' => 'docs/CHANGELOG.txt',
+      //'pattern' => '@version\s+([0-9a-zA-Z\.-]+)@',
+      //'lines' => 5,
+      //'cols' => 20,
+    ),
+    // Default list of files of the library to load. Important: Only specify
+    // third-party files belonging to the library here, not integration files of
+    // your module.
+    'files' => array(
+      // 'js' and 'css' follow the syntax of hook_library(), but file paths are
+      // relative to the library path.
+      'js' => array(
+        'ember-1.0.0-pre.2.min.js',
+      ),
+      'css' => array(
+        //'lib_style.css',
+      ),
+      // For PHP libraries, specify include files here, still relative to the
+      // library path.
+      'php' => array(
+        //'exlib.php',
+      ),
+    ),
+    // Optional: Specify alternative variants of the library, if available.
+    'variants' => array(
+      // All properties defined for 'minified' override top-level properties.
+      'minified' => array(
+        'files' => array(
+          'js' => array(
+            'ember-1.0.0-pre.2.min.js',
+          ),
+          'css' => array(
+            //'lib_style.css',
+          ),
+        ),
+        'variant callback' => 'ember_check_variant',
+        'variant arguments' => array(
+          'variant' => 'minified',
+        ),
+      ),
+    ),
+    // Optional, but usually required: Override top-level properties for later
+    // versions of the library. The properties of the minimum version that is
+    // matched override the top-level properties. Note:
+    // - When registering 'versions', it usually does not make sense to register
+    // 'files', 'variants', and 'integration files' on the top-level, as most
+    // of those likely need to be different per version and there are no
+    // defaults.
+    // - The array keys have to be strings, as PHP does not support floats for
+    // array keys.
+    'versions' => array(
+      '1' => array(
+        'files' => array(
+          'js' => array('ember-1.0.0-pre.2.min.js'),
+          //'css' => array('exlib_style.css'),
+        ),
+      ),
+    ),
+    // Optional: Register files to auto-load for your module. All files must be
+    // keyed by module, and follow the syntax of the 'files' property.
+    'integration files' => array(
+      'ember' => array(
+        //'js' => array('ex_lib.inc'),
+      ),
+    ),
+    // Optionally register callbacks to apply to the library during different
+    // stages of its lifetime ('callback groups').
+    'callbacks' => array(
+      // Used to alter the info associated with the library.
+      'info' => array(
+        //'ember_libraries_info_callback',
+      ),
+      // Called before detecting the given library.
+      'pre-detect' => array(
+        //'ember_libraries_predetect_callback',
+      ),
+      // Called after detecting the library.
+      'post-detect' => array(
+        //'ember_libraries_postdetect_callback',
+      ),
+      // Called before the library is loaded.
+      'pre-load' => array(
+        //'ember_libraries_preload_callback',
+      ),
+      // Called after the library is loaded.
+      'post-load' => array(
+        //'ember_libraries_postload_callback',
+      ),
+    ),
+  );
+
+return $libraries;
+}

@@ -1,0 +1,21 @@
+name = Growcalc Element Nutrition (Model)
+description = Provides entity functionality as an example to use in your own development projects
+core = 7.x
+
+package = GrowCalc
+
+dependencies[] = growcalc
+dependencies[] = entity
+dependencies[] = views
+dependencies[] = field_collection
+dependencies[] = entityreference
+
+files[] = growcalc_element_nutrition.admin.inc
+files[] = growcalc_element_nutrition_type.admin.inc
+files[] = views/growcalc_element_nutrition.views.inc
+files[] = views/growcalc_element_nutrition_handler_link_field.inc
+files[] = views/growcalc_element_nutrition_handler_edit_link_field.inc
+files[] = views/growcalc_element_nutrition_handler_delete_link_field.inc
+files[] = views/growcalc_element_nutrition_handler_operations_links_field.inc
+files[] = views/growcalc_element_nutrition_handler_element_nutrition_operations_field
+                

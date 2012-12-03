@@ -1,0 +1,331 @@
+<?php
+
+/**
+ * @file
+ * Module for the growcalc_element Entity - a starting point to create your own Entity
+ * and associated administration interface
+ */  
+
+/**
+ * Implement hook_init().
+ */
+function growcalc_element_init() {
+  if (arg(0) !== 'admin') {
+    drupal_add_library('system', 'ui.dialog');
+
+    drupal_add_js('sites/all/libraries/colorpicker/js/colorpicker.js');
+    drupal_add_css('sites/all/libraries/colorpicker/css/colorpicker.css');
+
+    drupal_add_js(drupal_get_path('module', 'growcalc_element') . '/js/growcalc_element.js');
+    drupal_add_css(drupal_get_path('module', 'growcalc_element') . '/css/growcalc_element.css');
+
+    $query = new EntityFieldQuery();
+    $growcalc_elements = $query->entityCondition('entity_type', 'node')         
+      ->propertyCondition('type', 'growcalc_element')
+      ->execute();
+
+    $data = array();
+    if (!empty($growcalc_elements['node'])) {
+      $growcalc_elements = node_load_multiple(array_keys($growcalc_elements['node']));
+      foreach($growcalc_elements as $element) {
+        $element_wrapper = entity_metadata_wrapper('node', $element);
+        $data[$element->title] = array(
+          'id' => $element->nid,
+          'symbol' => $element->title,
+          'description' => isset($element->field_description) ? $element->field_description[$element->language][0]['value'] : "",
+          'atomic_mass' => isset($element->field_atomic_mass) ? $element->field_atomic_mass[$element->language][0]['value'] : 0,
+          'oxidation' => isset($element->field_oxidation) ? $element->field_oxidation[$element->language][0]['value'] : 0,
+          'color' => isset($element->field_color) ? $element->field_color[$element->language][0]['jquery_colorpicker'] : "",
+          'status' => $element->status,
+        );
+
+        $ions = array();
+        if ($element_wrapper->growcalc_ions->count() > 0) {
+          foreach($element_wrapper->growcalc_ions as $ion_wrapper) {
+            $ions[] = array(
+              'element' => $ion_wrapper->growcalc_element->title->value(),
+              'count' => $ion_wrapper->count->value()
+            );
+          }
+        }
+        $data[$element->title]['ions'] = $ions;
+
+      }
+    }
+
+    drupal_add_js(array('growcalc' => array('elements' => $data)), 'setting');
+
+  }
+
+}
+
+/**
+ * Implements hook_menu()
+ */
+function growcalc_element_menu() {
+  $items['growcalc/ajax/element/create'] = array(
+    'page callback' => 'growcalc_element_ajax_create',
+    'page arguments' => array(),
+    'access arguments' => array('administer growcalc elements'),
+  );
+
+  $items['growcalc/ajax/element/%node/update'] = array(
+    'page callback' => 'growcalc_element_ajax_update',
+    'page arguments' => array(3),
+    'access arguments' => array('administer growcalc elements'),
+  );
+
+  $items['growcalc/ajax/element/%node/delete'] = array(
+    'page callback' => 'growcalc_element_ajax_delete',
+    'page arguments' => array(3),
+    'access arguments' => array('administer growcalc elements'),
+  );
+
+  $items['admin/config/growcalc/element'] = array(
+    'title' => 'GrowCalc element',
+    'description' => 'Configure GrowCalc element.',
+    'access arguments' => array('administer growcalc element'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('growcalc_element_settings'),
+    'file' => 'growcalc_element.admin.inc'
+  );
+
+  return $items;
+}
+
+function growcalc_element_new() {
+  $element = new stdClass();
+  $element->type = 'growcalc_element';
+  $element->status = 1;
+  $element->language = 'und'; //language_default()->language;
+  $element->created = time();
+  $element->timestamp = time();
+  node_object_prepare($element);
+
+  return $element;
+}
+
+function growcalc_element_update($element, $values) {
+  $element->title = $values['symbol'];
+  $element->field_description[$element->language][0]['value'] = $values['description'];
+  $element->field_atomic_mass[$element->language][0]['value'] = $values['atomic_mass'];
+  $element->field_oxidation[$element->language][0]['value'] = $values['oxidation'];
+  $element->field_color[$element->language][0]['jquery_colorpicker'] = $values['color'];
+  $element->status = ($values['status'] == True);
+
+  // Добавление отсутствующих ионов, обновление существующих
+  foreach($_POST['Ions'] as $Ion) {
+    $contains = false;
+
+    foreach($element->growcalc_ions[$element->language] as $ion) {
+      $ion = entity_metadata_wrapper('field_collection_item', $ion['value']);
+
+      if ($ion->growcalc_element->title->value() == $Ion['Element']) {
+        $contains = true;
+
+        $ion->count->set($Ion['Count']);
+        $ion->save();
+        break;
+      }
+    }
+
+    if (!$contains) {
+      $ref = node_load_multiple(FALSE, array('title' => $Ion['Element'], 'type' => 'growcalc_element'));
+      $ref = reset($ref);
+      $newIon = entity_create('field_collection_item', array(
+          'field_name'           => 'growcalc_ions',
+          'count'            => array(LANGUAGE_NONE => array(0 => array('value' => $Ion['Count']))),
+          'growcalc_element' => array(LANGUAGE_NONE => array(0 => array('target_id' => $ref->nid, 'target_type' => 'node'))),
+      ));
+      $newIon->setHostEntity('node', $element);
+      $newIon->save();
+    }
+  }
+
+  // Удаление ионов
+  foreach($element->growcalc_ions[$element->language] as $ion_id) {
+    $contains = false;
+    $ion = entity_metadata_wrapper('field_collection_item', $ion_id['value']);
+    $elementSymbol = $ion->growcalc_element->title->value();
+
+    foreach($_POST['Ions'] as $Ion) {
+      if ($elementSymbol == $Ion['Element']) {
+        $contains = true;
+      }
+    }
+
+    if (!$contains) {
+      foreach($element->growcalc_ions['und'] as $k=>$v) {
+        if ($v['value'] == $ion->item_id->value()) {
+          unset($element->growcalc_ions['und'][$k]);
+          break;
+        }
+      }
+      $ion->delete();
+    }
+  }
+
+  node_submit($element);
+  node_save($element);
+  //$element_wrapper->save();
+  //foreach($element_wrapper->growcalc_ions as $ion) {
+  //  dsm($ion->growcalc_element->title->value());
+  //  dsm($ion->count->value());
+  //}
+  //dsm($element->growcalc_ions);
+
+  return $element;
+}
+
+function growcalc_element_ajax_create($type) {
+  $element = growcalc_element_update(growcalc_element_new(), array(
+    'symbol' => check_plain($_POST['Symbol']),
+    'description' => check_plain($_POST['Description']),
+    'atomic_mass' => check_plain($_POST['AtomicMass']),
+    'oxidation' => check_plain($_POST['Oxidation']),
+    'color' => check_plain($_POST['Color']),
+    'status' => check_plain($_POST['Status']),
+    'ions' => $_POST['Ions'],
+  ));
+
+  if ($element->nid) {
+    print drupal_json_output(array('success' => true, 'id' => $element->nid));
+  } else {
+    // throw new ajax error.
+  }
+}
+
+function growcalc_element_ajax_update($element) {
+  $element = growcalc_element_update($element, array(
+    'symbol' => check_plain($_POST['Symbol']),
+    'description' => check_plain($_POST['Description']),
+    'atomic_mass' => check_plain($_POST['AtomicMass']),
+    'oxidation' => check_plain($_POST['Oxidation']),
+    'color' => check_plain($_POST['Color']),
+    'status' => check_plain($_POST['Status']),
+    'ions' => $_POST['Ions'],
+  ));
+
+  print drupal_json_output(array('success' => true));
+}
+
+function growcalc_element_ajax_delete($element) {
+  node_delete($element->nid);
+
+  print drupal_json_output(array('success' => true));
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function growcalc_element_permission() {
+  // We set up permisssions to manage entity types, manage all entities and the
+  // permissions for each individual entity
+  $permissions = array(
+    'administer growcalc elements' => array(
+      'title' => t('Administer growcalc_elements'),
+      'description' => t('Edit and delete all growcalc_elements'),
+    ),  
+  );
+  
+  return $permissions;  
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function growcalc_element_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'growcalc_element') . '/views',
+  );
+}
+
+/* =========== Block ============ */
+
+/**
+ * Implements hook_block_info().
+ *
+ * This hook declares what blocks are provided by the module.
+ */
+function growcalc_element_block_info() {
+  $blocks['growcalc_elements'] = array(
+    'info' => t('Elements'),
+    'cache' => DRUPAL_CACHE_CUSTOM,
+
+    'status' => TRUE,
+    'region' => 'sidebar_first',  // Not usually provided.
+//    'visibility' => BLOCK_VISIBILITY_LISTED,  // Not usually provided.
+//    'pages' => 'node/*', // Not usually provided here.
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ *
+ */
+function growcalc_element_block_configure($delta = '') {
+  $form = array();
+  if ($delta == 'growcalc_elements') {
+    // TODO: form
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ *
+ */
+function growcalc_element_block_save($delta = '', $edit = array()) {
+  if ($delta == 'growcalc_elements') {
+  }
+  return;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function growcalc_element_block_view($delta = '') {
+  //The $delta parameter tells us which block is being requested.
+  switch ($delta) {
+    case 'growcalc_elements':
+      // The subject is displayed at the top of the block. Note that it
+      // should be passed through t() for translation. The title configured
+      // for the block using Drupal UI supercedes this one.
+      $block['subject'] = t('Elements');
+      // The content of the block is typically generated by calling a custom
+      // function.
+      $block['content'] = growcalc_element_block_contents($delta);
+      break;
+  }
+  return $block;
+}
+
+/**
+ * A module-defined block content function.
+ */
+function growcalc_element_block_contents($which_block) {
+  switch ($which_block) {
+    case 'growcalc_elements':
+      $filter = '<input class="calc-elements-filter filter" id="calc-elements-filter" type="text" placeholder="Filter...">';
+
+      if (node_access('create', 'growcalc_element')) {
+        $filter = '<div class="input-append">' . 
+          $filter . 
+          '<span class="add-on add-on-btn add-new"><a class="btn btn-success btn-add-new" href="'. $GLOBALS['base_path'] .'node/add/growcalc_element">+</a></span>
+        </div>';
+      }
+
+      return array('#markup' => '
+        <div class="list-with-filter">
+          <div class="calc-elements-control-group">
+            <div class="controls">'.$filter.'</div>
+          </div>
+          <div id="calc-elements"><ul class="nav nav-list nav-elements"></ul></div>
+        </div>');
+  }
+}

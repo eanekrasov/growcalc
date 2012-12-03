@@ -1,0 +1,153 @@
+<?php
+
+/**
+ * @file
+ */
+
+/**
+ * Implementation of hook_requirements()
+ */
+function growcalc_requirements($phase) {
+  $errors = array();
+  // Set the base path for the module, and use this to check the existence of files.
+  $path = drupal_get_path('module', 'growcalc') . '/';
+  if ($phase == 'runtime') {
+  }
+  elseif ($phase == 'install') {
+    if (!function_exists('libraries_get_path')) {
+      module_load_include('module', 'libraries');
+    }
+    $path = libraries_get_path('raphael');
+    // The first file we check is the 3rd party integration. Without this file, the module will not work. Other.
+    // files are also required, but the assumption is made that if they got this file, they will have gotten all the other files.
+    // This is done to keep code relatively streamlined.
+    if (!is_file($path . '/raphael.js')) {
+      $t = get_t();
+      $errors['growcalc_missing_raphael'] = array(
+        'title' => $t('Required files missing'),
+        'description' => $t(
+          '<h2>Raphael.js library not installed</h2><br />You are missing the required files for the GrowCalc. Please download the raphael.zip from !github and unzip the CSS, JS and IMAGES folders to !raphael_path. After doing this, confirm that the following path exists: !raphael_js_path.',
+          array(
+            '!github' => l(
+              'https://github.com/DmitryBaranovskiy/raphael/',
+              'https://github.com/DmitryBaranovskiy/raphael/',
+              array(
+                'external' => TRUE,
+              )
+            ),
+            '!raphael_path' => '<strong>' . $path . '</strong>',
+            '!raphael_js_path' => '<strong>' . $path . '/raphael.js</strong>',
+          )
+        ),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    $path = libraries_get_path('sylvester');
+    // The first file we check is the 3rd party integration. Without this file, the module will not work. Other.
+    // files are also required, but the assumption is made that if they got this file, they will have gotten all the other files.
+    // This is done to keep code relatively streamlined.
+    if (!is_file($path . '/sylvester.js')) {
+      $t = get_t();
+      $errors['growcalc_missing_sylvester'] = array(
+        'title' => $t('Required files missing'),
+        'description' => $t(
+          '<h2>Sylvester vector and matrix javascript library not installed</h2><br />You are missing the required files for the GrowCalc. Please download the sylvester from !sylvester and unzip the archive to !sylvester_path. After doing this, confirm that the following path exists: !sylvester_js_path.',
+          array(
+            '!sylvester' => l(
+              'http://sylvester.jcoglan.com/',
+              'http://sylvester.jcoglan.com/',
+              array(
+                'external' => TRUE,
+              )
+            ),
+            '!sylvester_path' => '<strong>' . $path . '</strong>',
+            '!sylvester_js_path' => '<strong>' . $path . '/sylvester.js</strong>',
+          )
+        ),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $errors;
+}
+
+
+/**
+ * Implements hook_schema()
+ */
+function growcalc_schema() {
+  $schema = array();
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function growcalc_install() {
+  $t = get_t();
+
+  foreach (_growcalc_installed_fields() as $field) {
+    field_create_field($field);
+  }
+
+  foreach (_growcalc_installed_instances() as $instance) {
+    field_create_instance($instance);
+  }
+}
+
+function _growcalc_installed_fields() {
+  $t = get_t();
+  return array(
+    'count' => array(
+      'field_name' => 'count',
+      'cardinality' => 1,
+      'type'        => 'number_integer',
+      'settings'    => array(),
+    ),
+    'amount' => array(
+      'field_name'  => 'amount',
+      'cardinality' => 1,
+      'type'        => 'number_float',
+      'settings'    => array(),
+    ),
+  );
+}
+
+function _growcalc_installed_instances() {
+  $t = get_t();
+  return array(
+  );
+}
+
+
+/*
+ * Implements hook_uninstall().
+ */
+function growcalc_uninstall() {
+/*  foreach (array_reverse(_growcalc_installed_instances()) as $installed_instance) {
+    $instances = field_info_instances($installed_instance['entity_type'], $installed_instance['bundle']);
+    foreach ($instances as $instance_name => $instance) {
+      if ($instance_name == $installed_instance['field_name']) {
+        field_delete_instance($instance, TRUE);
+      }
+    }
+  }*/
+  foreach(array_reverse(_growcalc_installed_instances()) as $instance) {
+    $instance = field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle']);
+    field_delete_instance($instance, TRUE);
+  }
+
+
+  foreach (array_reverse(array_keys(_growcalc_installed_fields())) as $field) {
+    field_delete_field($field);
+
+    db_drop_table('field_data_' . $field);
+    db_drop_table('field_revision_' . $field);
+  }
+
+
+
+  field_purge_batch(1000);
+}

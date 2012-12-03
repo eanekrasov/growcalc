@@ -1,0 +1,239 @@
+<?php
+
+/**
+ * @file
+ * Sets up the base table for our entity and a table to store information about
+ * the entity types.
+ */
+
+
+/**
+ * Implements hook_schema().
+ */
+function growcalc_fertilizer_schema() {
+  $schema = array();
+
+  $schema['growcalc_fertilizer'] = array(
+    'description' => 'The base table for growcalc_fertilizer entities.',
+    'fields' => array(
+      'growcalc_fertilizer_id' => array(
+        'description' => 'Primary Key: Identifier for a growcalc_fertilizer.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'The {growcalc_fertilizer_type}.type of this growcalc_fertilizer.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'language' => array(
+        'description' => 'The language of the growcalc_fertilizer.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'name' => array(
+        'description' => 'The name of the growcalc_fertilizer - a human-readable identifier.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'The description of the growcalc_fertilizer',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the element is published (visible to non-administrators).',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the growcalc_fertilizer was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the growcalc_fertilizer was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data.',
+      ),
+    ),
+    'primary key' => array('growcalc_fertilizer_id'),
+    'indexes' => array(
+      'type' => array('type'),
+    ),
+  );
+
+  $schema['growcalc_fertilizer_type'] = array(
+    'description' => 'Stores information about defined growcalc_fertilizer types.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique growcalc_fertilizer type identifier.',
+      ),
+      'type' => array(
+        'description' => 'The machine-readable name of this growcalc_fertilizer type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this growcalc_fertilizer type.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The weight of this growcalc_fertilizer type in relation to others.',
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data related to this growcalc_fertilizer type.',
+      ),
+    ) + entity_exportable_schema_fields(),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'type' => array('type'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function growcalc_fertilizer_install() {
+  // Create the basic growcalc fertilizer type.
+  $growcalc_fertilizer_type = growcalc_fertilizer_type_create(array(
+    'type' => 'growcalc_fertilizer',
+    'label' => t('Fertilizer'),
+    'weight' => 0,
+    'data' => '',
+    'status' => 1,
+    'module' => 'growcalc_fertilizer',
+    'is_new' => TRUE
+  ));
+
+  growcalc_fertilizer_type_save($growcalc_fertilizer_type);
+
+  // During installation, the t() function is unavailable, so we use get_t()
+  // to store the name of the translation function.
+  $t = get_t();
+
+  // Create all the fields we are adding to our content type.
+  // http://api.drupal.org/api/function/field_create_field/7
+  foreach (_growcalc_fertilizer_installed_fields() as $field) {
+    field_create_field($field);
+  }
+
+  // Create all the instances for our fields.
+  // http://api.drupal.org/api/function/field_create_instance/7
+  foreach (_growcalc_fertilizer_installed_instances() as $instance) {
+    field_create_instance($instance);
+  }
+
+  drupal_flush_all_caches();
+}
+
+function _growcalc_fertilizer_installed_fields() {
+  $t = get_t();
+  return array(
+    'growcalc_fertilizer' => array(
+      'field_name'  => 'growcalc_fertilizer',
+      'cardinality' => 1,
+      'type'        => 'entityreference',
+      'settings'    => array( 'target_type' => 'growcalc_fertilizer' ),
+    ),
+
+    'growcalc_elements' => array(
+      'field_name'  => 'growcalc_elements',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'type'        => 'field_collection',
+      'settings'    => array(),
+    ),
+  );
+}
+
+function _growcalc_fertilizer_installed_instances() {
+  $t = get_t();
+  return array(
+    'growcalc_elements' => array(
+      'field_name'  => 'growcalc_elements',
+      'entity_type' => 'growcalc_fertilizer',
+      'bundle'      => 'growcalc_fertilizer',
+      'label'       => $t('Elements'),
+      'widget'      => array(
+        'type'      => 'field_collection_embed'
+      ),
+    ),
+    'growcalc_element' => array(
+      'field_name'  => 'growcalc_element',
+      'entity_type' => 'field_collection_item',
+      'bundle'      => 'growcalc_elements',
+      'label'       => $t('Growcalc Element'),
+      'widget'      => array(
+        'type'      => 'options_select'
+      ),
+      'required' => TRUE,
+    ),
+    'amount' => array(
+      'field_name'  => 'amount',
+      'entity_type' => 'field_collection_item',
+      'bundle'      => 'growcalc_elements',
+      'label'       => $t('Amount'),
+      'widget'      => array(
+        'type'      => 'number'
+      ),
+      'required' => TRUE,
+    ),
+  );
+}
+
+
+/*
+ * Implements hook_uninstall().
+ */
+function growcalc_fertilizer_uninstall() {
+  foreach(array_reverse(_growcalc_fertilizer_installed_instances()) as $instance) {
+    $instance = field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle']);
+    field_delete_instance($instance, TRUE);
+  }
+
+  foreach (array_reverse(array_keys(_growcalc_fertilizer_installed_fields())) as $field) {
+    field_delete_field($field);
+  }
+
+  field_purge_batch(1000);
+
+  // At uninstall time we'll notify field.module that the entity was deleted
+  // so that attached fields can be cleaned up.
+  field_attach_delete_bundle('growcalc_fertilizer' , 'growcalc_fertilizer');
+}

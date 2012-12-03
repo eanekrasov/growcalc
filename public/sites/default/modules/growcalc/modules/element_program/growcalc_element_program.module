@@ -1,0 +1,553 @@
+<?php
+
+/**
+ * @file
+ * Module for the growcalc_element_program Entity - a starting point to create your own Entity
+ * and associated administration interface
+ */  
+
+
+/**
+ * Implement hook_entity_info().
+ *
+ * We define two entities here - the actual entity that will hold our domain
+ * specific information and an entity that holds information about the different
+ * types of entities. See here: http://drupal.org/node/977380 for a discussion on this
+ * choice.
+ */
+function growcalc_element_program_entity_info() {
+  $return['growcalc_element_program'] = array(
+    'label' => t('Growcalc element_program'),
+    // The entity class and controller class extend the classes provided by the
+    // Entity API
+    'entity class' => 'GrowcalcElementProgram',
+    'controller class' => 'GrowcalcElementProgramController',
+    'base table' => 'growcalc_element_program',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+        'id' => 'growcalc_element_program_id',
+        'bundle' => 'type',
+    ),
+    // Bundles are defined by the growcalc_element_program types below
+    'bundles' => array(),
+    // Bundle keys tell the FieldAPI how to extract information from the bundle objects
+    'bundle keys' => array(
+      'bundle' => 'type',
+    ),
+    'label callback' => 'entity_class_label',
+    'uri callback' => 'entity_class_uri',
+    'creation callback' => 'growcalc_element_program_create',
+    'access callback' => 'growcalc_element_program_access',
+    'module' => 'growcalc_element_program',
+    // The information below is used by the GrowcalcElementProgramUIController (which extends the EntityDefaultUIController)
+    'admin ui' => array(
+      'path' => 'admin/content/growcalc_element_programs',
+      'file' => 'growcalc_element_program.admin.inc',
+      'controller class' => 'GrowcalcElementProgramUIController',
+      'menu wildcard' => '%growcalc_element_program',
+    ),
+  );
+  // The entity that holds information about the entity types	  
+  $return['growcalc_element_program_type'] = array(
+    'label' => t('Growcalc element_program Type'),
+    'entity class' => 'GrowcalcElementProgramType',
+    'controller class' => 'GrowcalcElementProgramTypeController',
+    'base table' => 'growcalc_element_program_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'growcalc_element_program',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'label',
+    ),
+    'access callback' => 'growcalc_element_program_type_access',
+    'module' => 'growcalc_element_program',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/growcalc_element_program_types',
+      'file' => 'growcalc_element_program_type.admin.inc',
+      'controller class' => 'GrowcalcElementProgramTypeUIController',
+    ),
+  );
+
+  return $return;
+}
+
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * We are adding the info about the growcalc_element_program types via a hook to avoid a recursion
+ * issue as loading the growcalc_element_program types requires the entity info as well.
+ *
+ * @todo This needs to be improved
+ */
+function growcalc_element_program_entity_info_alter(&$entity_info) {
+  foreach (growcalc_element_program_get_types() as $type => $info) {
+    $entity_info['growcalc_element_program']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/growcalc_element_program_types/manage/%growcalc_element_program_type',
+        'real path' => 'admin/structure/growcalc_element_program_types/manage/' . $type,
+        'bundle argument' => 4,
+        'access arguments' => array('administer growcalc element program types'),
+      ),
+    );
+  }
+}
+  
+/**
+ * Implements hook_menu()
+ */
+function growcalc_element_program_menu() {
+  $items['growcalc/element_program'] = array(
+    'title' => 'GrowCalc element_programs',
+    'page callback' => 'growcalc_element_program_info_page',
+    'access callback' => TRUE,
+  );
+
+  $items['growcalc/element_program/defaults'] = array(
+    'title' => 'Create default element_programs',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('growcalc_element_program_defaults_form'),
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/growcalc/element_program'] = array(
+    'title' => 'GrowCalc element_program',
+    'description' => 'Configure GrowCalc element_program.',
+    'access arguments' => array('administer growcalc element program'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('growcalc_element_program_settings'),
+    'file' => 'growcalc_element_program.admin.inc'
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function growcalc_element_program_permission() {
+  // We set up permisssions to manage entity types, manage all entities and the
+  // permissions for each individual entity
+  $permissions = array(
+    'administer growcalc element program types' => array(
+      'title' => t('Administer growcalc_element_program types'),
+      'description' => t('Create and delete fields for growcalc_element_program types, and set their permissions.'),
+    ),
+    'administer growcalc element programs' => array(
+      'title' => t('Administer growcalc_element_programs'),
+      'description' => t('Edit and delete all growcalc_element_programs'),
+    ),  
+  );
+  
+  //Generate permissions per growcalc_element_program 
+  foreach (growcalc_element_program_get_types() as $type) {
+    $type_name = check_plain($type->type);
+    $permissions += array(
+      "edit any $type_name growcalc element program" => array(
+        'title' => t('%type_name: Edit any growcalc_element_program', array('%type_name' => $type->label)),
+      ),
+      "view any $type_name growcalc element program" => array(
+        'title' => t('%type_name: View any growcalc_element_program', array('%type_name' => $type->label)),
+      ),
+    );
+  }
+  return $permissions;  
+}
+
+
+/**
+ * Determines whether the given user has access to a growcalc_element_program.
+ *
+ * @param $op
+ *   The operation being performed. One of 'view', 'update', 'create', 'delete'
+ *   or just 'edit' (being the same as 'create' or 'update').
+ * @param $growcalc_element_program
+ *   Optionally a growcalc_element_program or a growcalc_element_program type to check access for. If nothing is
+ *   given, access for all growcalc_element_programs is determined.
+ * @param $account
+ *   The user to check for. Leave it to NULL to check for the global user.
+ * @return boolean
+ *   Whether access is allowed or not.
+ */
+function growcalc_element_program_access($op, $growcalc_element_program = NULL, $account = NULL) {
+  if (user_access('administer growcalc element programs', $account)) {
+    return TRUE;
+  }
+  if (isset($growcalc_element_program) && $type_name = $growcalc_element_program->type) {
+    $op = ($op == 'view') ? 'view' : 'edit';
+    if (user_access("$op any $type_name growcalc element program", $account)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+
+/**
+ * Access callback for the entity API.
+ */
+function growcalc_element_program_type_access($op, $type = NULL, $account = NULL) {
+  return user_access('administer growcalc element program types', $account);
+}
+
+
+/**
+ * Gets an array of all growcalc_element_program types, keyed by the type name.
+ *
+ * @param $type_name
+ *   If set, the type with the given name is returned.
+ * @return GrowcalcElementProgramType[]
+ *   Depending whether $type isset, an array of growcalc_element_program types or a single one.
+ */
+function growcalc_element_program_get_types($type_name = NULL) {
+  // entity_load will get the Entity controller for our growcalc_element_program entity and call the load
+  // function of that object - we are loading entities by name here.
+  $types = entity_load_multiple_by_name('growcalc_element_program_type', isset($type_name) ? array($type_name) : FALSE);
+  return isset($type_name) ? reset($types) : $types;
+}
+
+
+/**
+ * Menu argument loader; Load a growcalc_element_program type by string.
+ *
+ * @param $type
+ *   The machine-readable name of a growcalc_element_program type to load.
+ * @return
+ *   A growcalc_element_program type array or FALSE if $type does not exist.
+ */
+function growcalc_element_program_type_load($type) {
+  return growcalc_element_program_get_types($type);
+}
+
+
+/**
+ * Fetch a growcalc_element_program object. Make sure that the wildcard you choose 
+ * in the growcalc_element_program entity definition fits the function name here.
+ *
+ * @param $growcalc_element_program_id
+ *   Integer specifying the growcalc_element_program id.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   A fully-loaded $growcalc_element_program object or FALSE if it cannot be loaded.
+ *
+ * @see growcalc_element_program_load_multiple()
+ */
+function growcalc_element_program_load($growcalc_element_program_id, $reset = FALSE) {
+  $growcalc_element_programs = growcalc_element_program_load_multiple(array($growcalc_element_program_id), array(), $reset);
+  return reset($growcalc_element_programs);
+}
+
+
+/**
+ * Load multiple growcalc_element_programs based on certain conditions.
+ *
+ * @param $growcalc_element_program_ids
+ *   An array of growcalc_element_program IDs.
+ * @param $conditions
+ *   An array of conditions to match against the {growcalc_element_program} table.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   An array of growcalc_element_program objects, indexed by growcalc_element_program_id.
+ *
+ * @see entity_load()
+ * @see growcalc_element_program_load()
+ */
+function growcalc_element_program_load_multiple($growcalc_element_program_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('growcalc_element_program', $growcalc_element_program_ids, $conditions, $reset);
+}
+
+
+/**
+ * Deletes a growcalc_element_program.
+ */
+function growcalc_element_program_delete(GrowcalcElementProgram $growcalc_element_program) {
+  $growcalc_element_program->delete();
+}
+
+
+/**
+ * Delete multiple growcalc_element_programs.
+ *
+ * @param $growcalc_element_program_ids
+ *   An array of growcalc_element_program IDs.
+ */
+function growcalc_element_program_delete_multiple(array $growcalc_element_program_ids) {
+  entity_get_controller('growcalc_element_program')->delete($growcalc_element_program_ids);
+}
+
+
+/**
+ * Create a growcalc_element_program object.
+ */
+function growcalc_element_program_create($values = array()) {
+  return entity_get_controller('growcalc_element_program')->create($values);
+}
+
+/**
+ * Create a growcalc_element_program_type object.
+ */
+function growcalc_element_program_type_create($values = array()) {
+  return entity_get_controller('growcalc_element_program_type')->create($values);
+}
+
+
+/**
+ * Saves a growcalc_element_program to the database.
+ *
+ * @param $growcalc_element_program
+ *   The growcalc_element_program object.
+ */
+function growcalc_element_program_save(GrowcalcElementProgram $growcalc_element_program) {
+  return $growcalc_element_program->save();
+}
+
+
+/**
+ * Saves a growcalc_element_program type to the db.
+ */
+function growcalc_element_program_type_save(GrowcalcElementProgramType $type) {
+  $type->save();
+}
+
+
+/**
+ * Deletes a growcalc_element_program type from the db.
+ */
+function growcalc_element_program_type_delete(GrowcalcElementProgramType $type) {
+  $type->delete();
+}
+
+
+/**
+ * URI callback for growcalc_element_programs
+ */
+function growcalc_element_program_uri(GrowcalcElementProgram $growcalc_element_program){
+  return array(
+    'path' => 'growcalc/element_program/' . $growcalc_element_program->growcalc_element_program_id,
+  );
+}
+
+
+/**
+ * Menu title callback for showing individual entities
+ */
+function growcalc_element_program_page_title(GrowcalcElementProgram $growcalc_element_program){
+  return $growcalc_element_program->name;
+}
+
+
+/**
+ * Sets up content to show an individual growcalc_element_program
+ * @todo - get rid of drupal_set_title();
+ */
+function growcalc_element_program_page_view($growcalc_element_program, $view_mode = 'full') {    
+  $controller = entity_get_controller('growcalc_element_program');  
+  $content = $controller->view(array($growcalc_element_program->growcalc_element_program_id => $growcalc_element_program));
+  drupal_set_title($growcalc_element_program->name);
+
+    $program_wrapper = entity_metadata_wrapper('growcalc_element_program', $growcalc_element_program);
+
+      $data = array(
+        'name' => $growcalc_element_program->name,
+        'description' => $growcalc_element_program->description,
+        'elements' => array(),
+        'labels' => array(),
+        'data' => array(),
+      );
+
+      foreach($program_wrapper->growcalc_element_stages as $stage) {
+        $data['labels'][] = $stage->stage_name->value();
+      }
+      foreach($program_wrapper->growcalc_element_stages[0]->growcalc_stage_elements as $stage_element) {
+        $data['elements'][$stage_element->growcalc_element->name->value()] = $stage_element->growcalc_element->name->value();
+      }
+
+      foreach($program_wrapper->growcalc_element_stages as $stage) {
+        foreach($stage->growcalc_stage_elements as $element) {
+          $data['data'][$element->growcalc_element->name->value()][] = $element->amount->value();
+        }
+      }
+
+      drupal_add_js(array('growcalc' => array('growcalc_element_programs' => array( $growcalc_element_program->growcalc_element_program_id => $data ))), 'setting');
+      drupal_add_js(drupal_get_path('module', 'growcalc_element_program') . '/js/growcalc_element_program.js');
+
+
+  return $content;
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function growcalc_element_program_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'growcalc_element_program') . '/views',
+  );
+}
+
+
+/**
+ * Implement hook_theme().
+ */
+function growcalc_element_program_theme() {
+  return array(
+    'growcalc_element_program_add_list' => array(
+      'variables' => array('content' => array()),
+      'file' => 'growcalc_element_program.admin.inc',
+    ),
+    'growcalc_element_program' => array(
+      'render element_program' => 'element_programs',
+      'template' => 'growcalc-element-program',
+    ),
+   'growcalc_element_program_atomic_mass' => array(
+      'variables' => array('growcalc_element_program_atomic_mass', 'growcalc_element_program' => NULL),
+      'template' => 'growcalc-element-program-atomic-mass',
+    ),
+
+
+  );
+}  
+
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function growcalc_element_program_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link 'admin/structure/growcalc_element_programs/add' on 'admin/structure/growcalc_element_programs'.
+  if ($root_path == 'admin/content/growcalc_element_programs') {
+    $item = menu_get_item('growcalc/add/element_program');
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+
+/**
+ * The class used for growcalc_element_program entities
+ */
+class GrowcalcElementProgram extends Entity {
+  
+  public function __construct($values = array()) {
+    parent::__construct($values, 'growcalc_element_program');
+  }
+
+  protected function defaultLabel() {
+    return $this->name;
+  }
+
+  protected function defaultUri() {
+    return array('path' => 'growcalc/element_program/' . $this->growcalc_element_program_id);
+  }
+  
+  
+}
+
+
+/**
+ * The class used for growcalc_element_program type entities
+ */
+class GrowcalcElementProgramType extends Entity {
+  
+  public $type;
+  public $label;
+  
+  public function __construct($values = array()) {
+    parent::__construct($values, 'growcalc_element_program_type');
+  }
+  
+}
+
+
+/**
+ * The Controller for growcalc_element_program entities
+ */
+class GrowcalcElementProgramController extends EntityAPIController {
+  public function __construct($entityType) {
+    parent::__construct($entityType);
+  }
+
+
+  /**
+   * Create a growcalc_element_program - we first set up the values that are specific
+   * to our growcalc_element_program schema but then also go through the EntityAPIController
+   * function.
+   * 
+   * @param $type
+   *   The machine-readable type of the growcalc_element_program.
+   *
+   * @return
+   *   A growcalc_element_program object with all default fields initialized.
+   */
+  public function create(array $values = array()) {
+    // Add values that are specific to our Growcalcelement_program
+    $values += array( 
+      'growcalc_element_program_id' => '',
+      'is_new' => TRUE,
+      'type' => 'growcalc_element_program',
+      'name' => '',
+      'status' => '',
+      'created' => '',
+      'changed' => '',
+      'data' => '',
+    );
+    
+    $growcalc_element_program = parent::create($values);
+    return $growcalc_element_program;
+  }
+  
+  /**
+   * Overriding the buldContent function to add entity specific fields
+   */
+  public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $content = parent::buildContent($entity, $view_mode, $langcode, $content);
+    /*$content['growcalc_element_program_sample_data'] =  array(
+      '#markup' => theme('growcalc_element_program_sample_data', array('growcalc_element_program_sample_data' => check_plain($entity->data['sample_data']), 'growcalc_element_program' => $entity)),
+    );*/
+
+    return $content;
+  }
+  
+}
+
+
+/**
+ * The Controller for Growcalcelement_program entities
+ */
+class GrowcalcElementProgramTypeController extends EntityAPIControllerExportable {
+  public function __construct($entityType) {
+    parent::__construct($entityType);
+  }
+  
+   /**
+   * Create a growcalc_element_program type - we first set up the values that are specific
+   * to our growcalc_element_program type schema but then also go through the EntityAPIController
+   * function.
+   * 
+   * @param $type
+   *   The machine-readable type of the growcalc_element_program.
+   *
+   * @return
+   *   A growcalc_element_program type object with all default fields initialized.
+   */
+  public function create(array $values = array()) {
+    // Add values that are specific to our growcalc_element_program
+    $values += array( 
+      'id' => '',
+      'is_new' => TRUE,
+      'data' => '',
+    );
+    $growcalc_element_program_type = parent::create($values);
+    return $growcalc_element_program_type;
+  }
+}
