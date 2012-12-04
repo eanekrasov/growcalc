@@ -6,7 +6,7 @@
   GrowCalc.ColorPicker = Ember.View.extend({
     classNames: ['colorpicker'],
     value: null,
-    didInsertElement:function(){
+    didInsertElement:function () {
       var that = this;
       that.$().ColorPicker({
         flat: true,
