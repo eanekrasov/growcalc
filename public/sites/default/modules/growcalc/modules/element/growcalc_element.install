@@ -67,13 +67,43 @@ function _growcalc_element_installed_fields() {
       'type'        => 'entityreference',
       'settings'    => array( 'target_type' => 'node', ),
     ),
-
     'growcalc_ions' => array(
       'field_name'  => 'growcalc_ions',
       'cardinality' => FIELD_CARDINALITY_UNLIMITED,
       'type'        => 'field_collection',
       'settings'    => array(),
     ),
+    'count' => array(
+      'field_name' => 'count',
+      'cardinality' => 1,
+      'type'        => 'number_integer',
+      'settings'    => array(),
+    ),
+    'description' => array(
+      'field_name'  => 'description',
+      'cardinality' => 1,
+      'type'        => 'text_long',
+      'settings'    => array(),
+    ),
+    'atomic_mass' => array(
+      'field_name'  => 'atomic_mass',
+      'cardinality' => 1,
+      'type'        => 'number_integer',
+      'settings'    => array(),
+    ),
+    'oxidation' => array(
+      'field_name'  => 'oxidation',
+      'cardinality' => 1,
+      'type'        => 'number_float',
+      'settings'    => array(),
+    ),
+    'color' => array(
+      'field_name'  => 'color',
+      'cardinality' => 1,
+      'type'        => 'jquery_colorpicker',
+      'settings'    => array(),
+    ),
+
   );
 }
 
@@ -93,7 +123,7 @@ function _growcalc_element_installed_instances() {
       'field_name'  => 'growcalc_element',
       'entity_type' => 'field_collection_item',
       'bundle'      => 'growcalc_ions',
-      'label'       => $t('Growcalc element'),
+      'label'       => $t('Element'),
       'widget'      => array(
         'type'      => 'options_select',
       ),
@@ -108,6 +138,48 @@ function _growcalc_element_installed_instances() {
         'type'      => 'number',
       ),
       'required' => TRUE,
+    ),
+    'description' => array(
+      'field_name'  => 'description',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_element',
+      'label'       => $t('Description'),
+      'widget'      => array(
+        'type'      => 'text_textarea',
+      ),
+    ),
+    'atomic_mass' => array(
+      'field_name'  => 'atomic_mass',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_element',
+      'label'       => $t('Atomic mass'),
+      'widget'      => array(
+        'type'      => 'number',
+      ),
+      'default value' => array(0 => array('value' => 0)),
+      'settings' => array(
+        'min' => 0,
+      ),
+    ),
+    'oxidation' => array(
+      'field_name'  => 'oxidation',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_element',
+      'label'       => $t('Oxidation'),
+      'widget'      => array(
+        'type'      => 'number',
+      ),
+      'default value' => array(0 => array('value' => 0)),
+      'settings' => array(),
+    ),
+    'color' => array(
+      'field_name'  => 'color',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_element',
+      'label'       => $t('Color'),
+      'widget'      => array(
+        'type'      => 'jquery_colorpicker',
+      ),
     ),
   );
 }
@@ -134,7 +206,7 @@ function growcalc_element_uninstall() {
   // all instances of the field, their data, and the field itself.
   // http://api.drupal.org/api/function/field_delete_field/7
   foreach (array_keys(_growcalc_element_installed_fields()) as $field) {
-    //field_delete_field($field);
+    field_delete_field($field);
   }
 
   // Loop over any remaining field instances attached to the element
@@ -142,7 +214,7 @@ function growcalc_element_uninstall() {
   // http://api.drupal.org/api/function/field_delete_field/7
   $instances = field_info_instances('node', 'growcalc_element');
   foreach ($instances as $instance_name => $instance) {
-    //field_delete_instance($instance);
+    field_delete_instance($instance);
   }
 
   // Delete our content type

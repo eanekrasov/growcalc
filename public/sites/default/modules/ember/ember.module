@@ -10,6 +10,8 @@ function ember_libraries_info() {
   $libraries['ember'] = array(
     // Only used in administrative UI of Libraries API.
     'name' => 'Ember js',
+    'machine name' => 'emberjs',
+    'library path' => drupal_get_path('module', 'ember') . '/js',
     'vendor url' => 'http://emberjs.com',
     'download url' => 'http://emberjs.com/download',
     // Optional: Define a custom version detection callback, if required.
@@ -29,6 +31,7 @@ function ember_libraries_info() {
       // 'js' and 'css' follow the syntax of hook_library(), but file paths are
       // relative to the library path.
       'js' => array(
+        'handlebars-1.0.0.beta.6.js',
         'ember-1.0.0-pre.2.min.js',
       ),
       'css' => array(
@@ -46,6 +49,7 @@ function ember_libraries_info() {
       'minified' => array(
         'files' => array(
           'js' => array(
+            'handlebars-1.0.0.beta.6.js',
             'ember-1.0.0-pre.2.min.js',
           ),
           'css' => array(
@@ -70,7 +74,7 @@ function ember_libraries_info() {
     'versions' => array(
       '1' => array(
         'files' => array(
-          'js' => array('ember-1.0.0-pre.2.min.js'),
+          'js' => array('handlebars-1.0.0.beta.6.js', 'ember-1.0.0-pre.2.min.js'),
           //'css' => array('exlib_style.css'),
         ),
       ),
@@ -109,4 +113,12 @@ function ember_libraries_info() {
   );
 
 return $libraries;
+}
+
+function ember_get_version () {
+  return 1;
+}
+
+function ember_check_variant () {
+  return 'minified';
 }

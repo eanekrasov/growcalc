@@ -40,7 +40,7 @@ function growcalc_element_settings_create_default_elements_submit($form, &$form_
   module_load_include('inc', 'growcalc_element', 'growcalc_element.data');
   $elements = _growcalc_element_data();
   foreach($elements as $element) {
-    drupal_set_message(t("Element !element has been created.", array('!element' => l($element->title, 'node/' + $element->nid))));
+    drupal_set_message(t("Element !element has been created.", array('!element' => l($element->title, 'node/' . $element->nid))));
   }
 }
 

@@ -32,10 +32,10 @@ function growcalc_element_init() {
         $data[$element->title] = array(
           'id' => $element->nid,
           'symbol' => $element->title,
-          'description' => isset($element->field_description) ? $element->field_description[$element->language][0]['value'] : "",
-          'atomic_mass' => isset($element->field_atomic_mass) ? $element->field_atomic_mass[$element->language][0]['value'] : 0,
-          'oxidation' => isset($element->field_oxidation) ? $element->field_oxidation[$element->language][0]['value'] : 0,
-          'color' => isset($element->field_color) ? $element->field_color[$element->language][0]['jquery_colorpicker'] : "",
+          'description' => isset($element->description) ? $element->description[$element->language][0]['value'] : "",
+          'atomic_mass' => isset($element->atomic_mass) ? $element->atomic_mass[$element->language][0]['value'] : 0,
+          'oxidation' => isset($element->oxidation) ? $element->oxidation[$element->language][0]['value'] : 0,
+          'color' => isset($element->color) ? $element->color[$element->language][0]['jquery_colorpicker'] : "",
           'status' => $element->status,
         );
 
@@ -107,34 +107,36 @@ function growcalc_element_new() {
 
 function growcalc_element_update($element, $values) {
   $element->title = $values['symbol'];
-  $element->field_description[$element->language][0]['value'] = $values['description'];
-  $element->field_atomic_mass[$element->language][0]['value'] = $values['atomic_mass'];
-  $element->field_oxidation[$element->language][0]['value'] = $values['oxidation'];
-  $element->field_color[$element->language][0]['jquery_colorpicker'] = $values['color'];
+  $element->description[$element->language][0]['value'] = $values['description'];
+  $element->atomic_mass[$element->language][0]['value'] = $values['atomic_mass'];
+  $element->oxidation[$element->language][0]['value'] = $values['oxidation'];
+  $element->color[$element->language][0]['jquery_colorpicker'] = $values['color'];
   $element->status = ($values['status'] == True);
 
   // Добавление отсутствующих ионов, обновление существующих
-  foreach($_POST['Ions'] as $Ion) {
+  foreach($values['ions'] as $Ion) {
     $contains = false;
 
-    foreach($element->growcalc_ions[$element->language] as $ion) {
-      $ion = entity_metadata_wrapper('field_collection_item', $ion['value']);
+    if (isset($element->growcalc_ions)) {
+      foreach($element->growcalc_ions[$element->language] as $ion) {
+        $ion = entity_metadata_wrapper('field_collection_item', $ion['value']);
 
-      if ($ion->growcalc_element->title->value() == $Ion['Element']) {
-        $contains = true;
+        if ($ion->growcalc_element->title->value() == $Ion['element']) {
+          $contains = true;
 
-        $ion->count->set($Ion['Count']);
-        $ion->save();
-        break;
+          $ion->count->set($Ion['count']);
+          $ion->save();
+          break;
+        }
       }
     }
 
     if (!$contains) {
-      $ref = node_load_multiple(FALSE, array('title' => $Ion['Element'], 'type' => 'growcalc_element'));
+      $ref = node_load_multiple(FALSE, array('title' => $Ion['element'], 'type' => 'growcalc_element'));
       $ref = reset($ref);
       $newIon = entity_create('field_collection_item', array(
           'field_name'           => 'growcalc_ions',
-          'count'            => array(LANGUAGE_NONE => array(0 => array('value' => $Ion['Count']))),
+          'count'            => array(LANGUAGE_NONE => array(0 => array('value' => $Ion['count']))),
           'growcalc_element' => array(LANGUAGE_NONE => array(0 => array('target_id' => $ref->nid, 'target_type' => 'node'))),
       ));
       $newIon->setHostEntity('node', $element);
@@ -143,25 +145,27 @@ function growcalc_element_update($element, $values) {
   }
 
   // Удаление ионов
-  foreach($element->growcalc_ions[$element->language] as $ion_id) {
-    $contains = false;
-    $ion = entity_metadata_wrapper('field_collection_item', $ion_id['value']);
-    $elementSymbol = $ion->growcalc_element->title->value();
+  if (isset($element->growcalc_ions)) {
+    foreach($element->growcalc_ions[$element->language] as $ion_id) {
+      $contains = false;
+      $ion = entity_metadata_wrapper('field_collection_item', $ion_id['value']);
+      $elementSymbol = $ion->growcalc_element->title->value();
 
-    foreach($_POST['Ions'] as $Ion) {
-      if ($elementSymbol == $Ion['Element']) {
-        $contains = true;
-      }
-    }
-
-    if (!$contains) {
-      foreach($element->growcalc_ions['und'] as $k=>$v) {
-        if ($v['value'] == $ion->item_id->value()) {
-          unset($element->growcalc_ions['und'][$k]);
-          break;
+      foreach($values['ions'] as $Ion) {
+        if ($elementSymbol == $Ion['element']) {
+          $contains = true;
         }
       }
-      $ion->delete();
+
+      if (!$contains) {
+        foreach($element->growcalc_ions['und'] as $k=>$v) {
+          if ($v['value'] == $ion->item_id->value()) {
+            unset($element->growcalc_ions['und'][$k]);
+            break;
+          }
+        }
+        $ion->delete();
+      }
     }
   }
 
@@ -179,13 +183,13 @@ function growcalc_element_update($element, $values) {
 
 function growcalc_element_ajax_create($type) {
   $element = growcalc_element_update(growcalc_element_new(), array(
-    'symbol' => check_plain($_POST['Symbol']),
-    'description' => check_plain($_POST['Description']),
-    'atomic_mass' => check_plain($_POST['AtomicMass']),
-    'oxidation' => check_plain($_POST['Oxidation']),
-    'color' => check_plain($_POST['Color']),
-    'status' => check_plain($_POST['Status']),
-    'ions' => $_POST['Ions'],
+    'symbol' => check_plain($_POST['symbol']),
+    'description' => check_plain($_POST['description']),
+    'atomic_mass' => check_plain($_POST['atomic_mass']),
+    'oxidation' => check_plain($_POST['oxidation']),
+    'color' => check_plain($_POST['color']),
+    'status' => check_plain($_POST['status']),
+    'ions' => $_POST['ions'],
   ));
 
   if ($element->nid) {
@@ -197,13 +201,13 @@ function growcalc_element_ajax_create($type) {
 
 function growcalc_element_ajax_update($element) {
   $element = growcalc_element_update($element, array(
-    'symbol' => check_plain($_POST['Symbol']),
-    'description' => check_plain($_POST['Description']),
-    'atomic_mass' => check_plain($_POST['AtomicMass']),
-    'oxidation' => check_plain($_POST['Oxidation']),
-    'color' => check_plain($_POST['Color']),
-    'status' => check_plain($_POST['Status']),
-    'ions' => $_POST['Ions'],
+    'symbol' => check_plain($_POST['symbol']),
+    'description' => check_plain($_POST['description']),
+    'atomic_mass' => check_plain($_POST['atomic_mass']),
+    'oxidation' => check_plain($_POST['oxidation']),
+    'color' => check_plain($_POST['color']),
+    'status' => check_plain($_POST['status']),
+    'ions' => $_POST['ions'],
   ));
 
   print drupal_json_output(array('success' => true));

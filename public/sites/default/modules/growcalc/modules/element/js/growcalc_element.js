@@ -22,6 +22,25 @@
     }
   });
 
+  JQ.ColorPicker = Ember.View.extend(JQ.Widget, {
+    uiType: 'ColorPicker',
+    uiOptions: ['color', 'flat', 'onChange'],
+    attributeBindings: ['color'],
+    color: '000000',
+    classNames: ['color-picker'],
+    onChange: function (hsb, hex, rgb) {
+      $(this).data('view').set('color', hex);
+    },
+    didInsertElement: function () {
+      this._super();
+      this.$().css({
+        'position': 'relative',
+        'display': 'block',
+      });
+      this.$().data('view', this);
+    }
+  });
+
   GrowCalc.Element = Ember.Object.extend(GrowCalc.DrupalSavable, {
     Type: 'element',
 
@@ -85,21 +104,21 @@
       var that = this,
         Ions = that.get('Ions'),
         data = {
-          Id: that.get('Id'),
-          Symbol: that.get('Symbol'),
-          Description: that.get('Description'),
-          AtomicMass: that.get('AtomicMass'),
-          Tag: that.get('Tag'),
-          Oxidation: that.get('Oxidation'),
-          Color: that.get('Color'),
-          Ions: [],
+          id: that.get('Id'),
+          symbol: that.get('Symbol'),
+          description: that.get('Description'),
+          atomic_mass: that.get('AtomicMass'),
+          tag: that.get('Tag'),
+          oxidation: that.get('Oxidation'),
+          color: that.get('Color'),
+          ions: [],
         };
         
       for(var i in Ions) {
         if (Ions[i] instanceof Ember.Object) {
-          data.Ions.pushObject({
-            Element: Ions[i].Element.Symbol,
-            Count: Ions[i].Count
+          data.ions.pushObject({
+            element: Ions[i].Element.Symbol,
+            count: Ions[i].Count
           });
         }
       }
@@ -176,8 +195,8 @@
           if (typeof data.success !== 'undefined' && data.success) {
             if (that.IsNew()) {
               that.set('Id', data.id);
-              that.UpdateDefaults();
             }
+            that.UpdateDefaults();
           }
         },
         failure: function (jqXHR, textStatus, errorThrown) {
@@ -213,15 +232,10 @@
      * Почистить за собой.. ^_^
      */
     Destroy: function () {
-      var that = this;
-
-      that.CloseDialogs();
-      that.view.remove();
-      that.view.destroy();
-      that.controller.destroy();
-      delete that.view;
-      delete that.controller;
-      that = undefined;
+      this.CloseDialogs();
+      this.view.remove();
+      delete this.view;
+      delete this.controller;
     },
     /**
      * Element.Rollback().
@@ -258,8 +272,6 @@
         }
       }
       this.set('Ions', Ions);
-
-      $('.element-view-' + this.get('Id') + ' .color').css({'background-color' : '#' + this.get('Color')});
     },
 
     /**
@@ -269,36 +281,12 @@
      * Форма рендерится в JQuery UI Dialog.
      */
     ShowEditorForm: function () {
-      var that = this,
-        k, i;
-
-      if (typeof that.editorForm === 'undefined') {
-        that.editorForm = $('<div />').attr('title', ((that.get('Id') !== 0) ? "Редактирование \"" + that.get("Symbol") + "\"" : "Создание нового элемента"));
-
-        that.editorView = GrowCalc.ElementEditorView.create({ controller: that.controller }).appendTo(that.editorForm);
-
-        that.editorForm.dialog({
-          width: 390,
-          minWidth: 390,
-          close: function(event, ui) {
-            if (typeof event.cancelable !== 'undefined' && event.cancelable ) {
-              that.Rollback();
-
-              that.DestroyEditorForm();
-            }
-          }
-        });
-      } else {
-        //that.editorForm.dialog('show');
-      }
-    },
-    DestroyEditorForm: function () {
       var that = this;
-      if (typeof that.editorForm !== 'undefined') {
-        that.editorForm.dialog('close');
-        that.editorView.remove();
-        delete that.editorView;
-        delete that.editorForm;
+      if (typeof that.editorView === 'undefined') {
+        that.editorView = GrowCalc.ElementEditorView.create({ controller: that.controller, autoOpen: true });
+        that.editorView.appendTo(document);
+      } else {
+        that.editorView.OpenDialog();
       }
     },
     /**
@@ -308,43 +296,31 @@
      * Форма рендерится в JQuery UI Dialog.
      */
     ShowDeleteForm: function () {
-      var that = this,
-        k, i;
-
-      if (typeof that.deleteForm === 'undefined') {
-        that.deleteForm = $('<div />').attr('title', "Удалить " + that.get("Symbol") + "?");
-
-        that.deleteView = GrowCalc.ElementDeleteView.create({ controller: that.controller }).appendTo(that.deleteForm);
-
-        that.deleteForm.dialog({
-          width: 300,
-          minWidth: 300,
-          close: function(event, ui) {
-            if (typeof event.cancelable !== 'undefined' && event.cancelable ) {
-              that.Rollback();
-              that.DestroyDeleteForm();
-            }
-          }
-        });
+      var that = this;
+      if (typeof that.deleteView === 'undefined') {
+        that.deleteView = GrowCalc.ElementDeleteView.create({ controller: that.controller, autoOpen: true });
+        that.deleteView.appendTo(document);
       } else {
-        //that.deleteForm.dialog('show');
+        that.deleteView.OpenDialog();  
+      }
+    },
+    DestroyEditorForm: function () {
+      var that = this;
+      if (typeof that.editorView !== 'undefined') {
+        that.editorView.CloseDialog();
+        delete that.editorView;
       }
     },
     DestroyDeleteForm: function () {
       var that = this;
-      if (typeof that.deleteForm !== 'undefined') {
-        that.deleteForm.dialog("close");
-        delete that.deleteForm;
+      if (typeof that.deleteView !== 'undefined') {
+        that.deleteView.CloseDialog();
+        delete that.deleteView;
       }
     },
     CloseDialogs: function () {
-    var that = this;
-      if (that.editorForm) {
-        that.DestroyEditorForm();
-      }
-      if (that.deleteForm) {
-        that.DestroyDeleteForm();
-      }
+      this.DestroyEditorForm();
+      this.DestroyDeleteForm();
     },
     AddIon: function (Element, Count, temporary = false) {
       //var ion = Ember.Object.create({'Element': Element, 'Count': parseInt(Count), 'Host': this});
@@ -453,13 +429,19 @@
   GrowCalc.ElementView = Ember.View.extend({
     // the controller is the initial context for the template
     controller: null,
-    template: Ember.Handlebars.compile('<li class="element-view-{{unbound Id}}"><span class="color" style="background-color: #{{unbound Color}}"></span> {{Symbol}} {{Description}} {{Tag}} <a {{action "ShowEditorForm" target on="click"}}>Редактировать</a></li>'),
+    template: Ember.Handlebars.compile(
+      '<li class="element-view-{{unbound Id}}">' +
+      '{{Description}} {{Tag}}' +
+      '<span class="symbol color" style="color: #{{unbound Color}}">{{Symbol}}</span>' +
+      '<button class="action action-edit" {{action "ShowEditorForm" target on="click"}} title="Редактирование"><span class="ui-icon ui-icon-wrench"></span></button>' +
+      '</li>'),
     ShowEditorForm: function () {
       this.controller.content.ShowEditorForm(); 
     },
+    ColorBinding: 'controller.content.Color',
     ColorChanged: function () {
-      $(' .color', this.$()).css({'background-color' : '#' + this.controller.content.get('Color')});
-    }.observes('controller.content.Color')
+      $('.color', this.$()).css({'color' : '#' + this.get('Color')});
+    }.observes('Color'),
   });
 
 
@@ -520,13 +502,14 @@
   //  childViews: [],
   //});
 
-  GrowCalc.ElementEditorView = Ember.View.extend({
-    // the controller is the initial context for the template
+  GrowCalc.ElementEditorView = JQ.Dialog.extend({
+    classNames: ['element-editor-dialog'],
+    width: 400,
+    minWidth: 400,
     controller: null,
+    title: "",
     //ElementIonsView: GrowCalc.ElementIonsView.create(),
     template: Ember.Handlebars.compile(
-      //'{{view Ember.ContainerView currentViewBinding="view.ElementIonsView"}}' +
-      '<div>' +
         '<table><tr>' +
           '<td><label>Символ</label></td>' +
           '<td>{{view Ember.TextField valueBinding="view.controller.content.Symbol"}}</td>' +
@@ -548,17 +531,27 @@
           '<br />' +
           '{{view GrowCalc.ColorPicker valueBinding="view.controller.content.Color"}}</td>' +
         '</tr>' +
-        '</table>' +
-      '</div>' +
-      '<div>' +
-        '<p>' +
-          '<button {{action "Commit" on="click"}}>Сохранить</button>' +
-          '<button {{action "Rollback" on="click"}}>Отмена</button>' +
-          '<button {{action "Delete" on="click"}}>Удалить</button>' +
-        '</p>' +
-      '</div>'
+        '</table>'
     ),
+    buttons: {
+      'Сохранить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.CommitAndClose();
+      },
+      'Отмена': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.RollbackAndClose();
+      },
+      'Удалить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.controller.content.ShowDeleteForm();
+      },
+    },
     didInsertElement: function() {
+      this.set('title', 'Редактирование элемента "' + this.controller.content.get('Symbol') + '"');
+      this._super();
+      $("button", this.$()).button();
+
       // autocomplete staff
       //var value = this.controller.content.get('AutocompleteField');
       //if (value !== 0) {
@@ -591,39 +584,50 @@
 
       return retValue;
     },
-    Commit: function () {
-      var element = this.controller.content;
+    CommitAndClose: function () {
+      var node = this.controller.content;
       if (this.Validate()) {
-        element.DestroyEditorForm();
-        element.Commit();
+        node.DestroyEditorForm();
+        node.Commit();
       }
     },
-    Delete: function () {
-      this.controller.content.ShowDeleteForm();
-    },
-    Rollback: function () {
+    RollbackAndClose: function () {
       var element = this.controller.content;
       element.DestroyEditorForm();
       element.Rollback();
+    },
+    close: function(event, ui) {
+      var that = Ember.View.views[$(this).attr('id')],
+        node;
+      if ((typeof event !== 'undefined') && (typeof event.cancelable !== 'undefined') && (event.cancelable)) {
+        that.RollbackAndClose();
+      }
     }
   });
 
-  GrowCalc.ElementDeleteView = Ember.View.extend({
-    // the controller is the initial context for the template
+  GrowCalc.ElementDeleteView = JQ.Dialog.extend({
+    classNames: ['element-delete-dialog'],
+    width: 300,
+    minWidth: 300,
     controller: null,
-    template: Ember.Handlebars.compile('<div>' +
-        '<p>Вы действительно хотите удалить "{{Symbol}}"?</p>' +
-        '<button {{action "Delete" on="click"}}>Удалить</button>' +
-        '<button {{action "Close" on="click"}}>Отмена</button>' +
-      '</div>'),
-    Delete: function () {
-      var element = this.controller.content;
-      element.DestroyDeleteForm();
-      element.Delete();
+    title: "Удалить элемент?",
+    template: Ember.Handlebars.compile('<p>Вы действительно хотите удалить "{{Symbol}}"?</p>'),
+    buttons: {
+      'Удалить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.controller.content.DestroyDeleteForm();
+        that.controller.content.Delete();
+      },
+      'Отмена': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.controller.content.DestroyDeleteForm();
+      }
     },
-    Close: function () {
-      var element = this.controller.content;
-      element.DestroyDeleteForm();
+    close: function(event, ui) {
+      var that = Ember.View.views[$(this).attr('id')];
+      if ((typeof event !== 'undefined') && (typeof event.cancelable !== 'undefined') && (event.cancelable)) {
+        that.controller.content.DestroyDeleteForm();
+      }
     }
   });
 

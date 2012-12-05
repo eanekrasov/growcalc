@@ -57,11 +57,13 @@ Drupal.tableDrag = function (table, tableSettings) {
   this.indentEnabled = false;
   for (var group in tableSettings) {
     for (var n in tableSettings[group]) {
-      if (tableSettings[group][n].relationship == 'parent') {
-        this.indentEnabled = true;
-      }
-      if (tableSettings[group][n].limit > 0) {
-        this.maxDepth = tableSettings[group][n].limit;
+      if (tableSettings[group].hasOwnProperty(n)) {
+        if (tableSettings[group][n].relationship == 'parent') {
+          this.indentEnabled = true;
+        }
+        if (tableSettings[group][n].limit > 0) {
+          this.maxDepth = tableSettings[group][n].limit;
+        }
       }
     }
   }

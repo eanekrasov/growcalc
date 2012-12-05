@@ -100,12 +100,6 @@ function growcalc_install() {
 function _growcalc_installed_fields() {
   $t = get_t();
   return array(
-    'count' => array(
-      'field_name' => 'count',
-      'cardinality' => 1,
-      'type'        => 'number_integer',
-      'settings'    => array(),
-    ),
     'amount' => array(
       'field_name'  => 'amount',
       'cardinality' => 1,
@@ -142,12 +136,7 @@ function growcalc_uninstall() {
 
   foreach (array_reverse(array_keys(_growcalc_installed_fields())) as $field) {
     field_delete_field($field);
-
-    db_drop_table('field_data_' . $field);
-    db_drop_table('field_revision_' . $field);
   }
-
-
 
   field_purge_batch(1000);
 }
