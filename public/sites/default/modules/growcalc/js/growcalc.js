@@ -3,7 +3,7 @@
 (function ($, Ember, Drupal, window, document, undefined) {
   "use strict";
 
-  window.GrowCalc = Ember.Application.create();
+  var GrowCalc = window.GrowCalc = Ember.Application.create();
 
   GrowCalc.DrupalSavable = Ember.Mixin.create({
     Type: 'node type',
@@ -11,23 +11,23 @@
     GetSaveUrl: function () {
       var key = this.get(this.get('PrimaryKey'));
       return Drupal.settings.basePath + "growcalc/" + this.get('Type') + "/" + 
-        ((key == 0) ? "ajax/create" : key + "/ajax/update");
+        ((key === 0) ? "ajax/create" : key + "/ajax/update");
     },
     GetDeleteUrl: function () {
       var key = this.get(this.get('PrimaryKey'));
       return Drupal.settings.basePath + "growcalc/" + this.get('Type') + "/" + key + "/ajax/delete";
     },
     PrepareData: function () {
-      return data;
+      return [];
     },
     IsNew: function () {
       var key = this.get(this.get('PrimaryKey'));
-      return (key == 0);
+      return (key === 0);
     },
   });
 
   GrowCalc.Drupal = function () {
-    var drupal = (function() {
+    var drupal = (function () {
       // private interface
       var status = true; // online/offline status.
 
@@ -49,7 +49,6 @@
           }
         },
         Delete: function (v) {
-          var that = this;
           if (!v.object.IsNew()) {
             $.ajax({
               type: 'POST',
@@ -71,7 +70,7 @@
       };
     })();
 
-    GrowCalc.Drupal = function () { // re-define the function for subsequent calls
+    window.GrowCalc.Drupal = function () { // re-define the function for subsequent calls
       return drupal;
     };
 
@@ -80,14 +79,14 @@
 
   GrowCalc.NumberField = Ember.TextField.extend({
     // implementation of this function, see http://stackoverflow.com/a/995193/65542
-    keyDown: function(event) {
+    keyDown: function (event) {
 
       if (event.keyCode == 38) { // up
-        this.set('value', parseFloat(this.get('value')) + 1 );
+        this.set('value', parseFloat(this.get('value')) + 1);
       }
 
       if (event.keyCode == 40) { // down
-        this.set('value', parseFloat(this.get('value')) - 1 );
+        this.set('value', parseFloat(this.get('value')) - 1);
       }
 
       
@@ -123,7 +122,7 @@
       e.preventDefault();
       this.scrollState = 1;
     },
-    mouseMove: function(e) {
+    mouseMove: function (e) {
       e.preventDefault();
       if (this.scrollState === 1) {
         this.updateValue(this.max * (e.pageX - $('.value', this.$()).offset().left) / this.$().width());
@@ -153,7 +152,7 @@
 
         this.updateValueDelta = this.updateValueDelta + value - this.oldValue; // .toFixed(this.get('precision'))
         this.oldValue = value;
-        if (Math.abs(this.updateValueDelta) > Math.pow(10, -parseInt(this.get('precision')))) {
+        if (Math.abs(this.updateValueDelta) > Math.pow(10, -parseInt(this.get('precision'), 10))) {
           var newValue = parseFloat(this.get('value')) + parseFloat(this.updateValueDelta.toFixed(this.get('precision')));
           this.set('value', newValue.toFixed(this.get('precision')));
           this.updateValueDelta = this.updateValueDelta - this.updateValueDelta.toFixed(this.get('precision'));
@@ -203,7 +202,7 @@
     });
   });
 
-  $(document).ajaxSend(function(event, jqXHR, ajaxSettings) {
+  $(document).ajaxSend(function (event, jqXHR, ajaxSettings) {
     jqXHR.context = $.pnotify({
       title: "Сохранение ",
       text: "Отправка на сервер..", 
@@ -218,4 +217,4 @@
     });
   });
 
-})(jQuery, Ember, Drupal, this, this.document);
+})(window.jQuery, window.Ember, window.Drupal, window, window.document);
