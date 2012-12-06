@@ -10,12 +10,12 @@
     PrimaryKey: 'Id',
     GetSaveUrl: function () {
       var key = this.get(this.get('PrimaryKey'));
-      return Drupal.settings.basePath + "growcalc/" + this.get('Type') + "/" + 
-        ((key === 0) ? "ajax/create" : key + "/ajax/update");
+      return Drupal.settings.basePath + "growcalc/ajax/" + this.get('Type') + "/" + 
+        ((key === 0) ? "create" : key + "/update");
     },
     GetDeleteUrl: function () {
       var key = this.get(this.get('PrimaryKey'));
-      return Drupal.settings.basePath + "growcalc/" + this.get('Type') + "/" + key + "/ajax/delete";
+      return Drupal.settings.basePath + "growcalc/ajax/" + this.get('Type') + "/" + key + "/delete";
     },
     PrepareData: function () {
       return [];
@@ -172,34 +172,38 @@
   });
 
   $(document).ajaxSuccess(function (event, jqXHR, ajaxSettings) {
-    jqXHR.context.pnotify({
-      title: "Успешно!",
-      text: "Данные сохранены на сервере.",
-      type: "success",
-      hide: true,
-      closer: true,
-      sticker: true,
-      icon:  "ui-icon ui-icon-check",
-      opacity: 1,
-      shadow: true,
-      width: $.pnotify.defaults.width,
-      delay: 100
-    });
+    if (jqXHR.hasOwnProperty('context')) {
+      jqXHR.context.pnotify({
+        title: "Успешно!",
+        text: "Данные сохранены на сервере.",
+        type: "success",
+        hide: true,
+        closer: true,
+        sticker: true,
+        icon:  "ui-icon ui-icon-check",
+        opacity: 1,
+        shadow: true,
+        width: $.pnotify.defaults.width,
+        delay: 100
+      });
+    }
   });
 
   $(document).ajaxError(function (event, jqXHR, ajaxSettings, thrownError) {
-    jqXHR.context.pnotify({
-      title: "Ошибка!",
-      type: "error",
-      text: jqXHR.responseText, 
-      closer: true,
-      sticker: true,
-      icon:  "ui-icon ui-icon-alert",
-      opacity: 1,
-      shadow: true,
-      width: $.pnotify.defaults.width,
-      delay: 1000
-    });
+    if (jqXHR.hasOwnProperty('context')) {
+      jqXHR.context.pnotify({
+        title: "Ошибка!",
+        type: "error",
+        text: jqXHR.responseText, 
+        closer: true,
+        sticker: true,
+        icon:  "ui-icon ui-icon-alert",
+        opacity: 1,
+        shadow: true,
+        width: $.pnotify.defaults.width,
+        delay: 1000
+      });
+    }
   });
 
   $(document).ajaxSend(function (event, jqXHR, ajaxSettings) {

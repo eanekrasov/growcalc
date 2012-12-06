@@ -10,9 +10,8 @@
  * Implement hook_init().
  */
 function growcalc_element_init() {
-  if (arg(0) !== 'admin') {
+  if ((arg(0) !== 'admin') && (arg(0) !== 'js') && (arg(0) !== 'system')) {
     drupal_add_library('system', 'ui.dialog');
-
     drupal_add_js('sites/all/libraries/colorpicker/js/colorpicker.js');
     drupal_add_css('sites/all/libraries/colorpicker/css/colorpicker.css');
 

@@ -59,10 +59,11 @@ function growcalc_info_page() {
 }
 
 function growcalc_init() {
-  if (arg(0) !== 'admin') {
+  if ((arg(0) !== 'admin') && (arg(0) !== 'js') && (arg(0) !== 'system')) {
     if (($ember = libraries_load('ember')) && !empty($ember['loaded'])) {
       drupal_add_library('system', 'ui');
       drupal_add_library('system', 'ui.autocomplete');
+      drupal_add_library('system', 'ui.dialog');
 
       drupal_add_js('sites/all/libraries/raphael/raphael.js');
       drupal_add_js('sites/all/libraries/sylvester/sylvester.js');
@@ -74,6 +75,10 @@ function growcalc_init() {
       //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/raphael-ext.js');
       //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/gceditor.js');
       //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/structures.js');
+
+      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.dimensions.js');
+      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.tooltip.min.js');
+      //drupal_add_css(drupal_get_path('module', 'growcalc') . '/css/jquery.tooltip.css');      
 
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.list-filter.js');
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/ember-jquery-ui-mixin.js');

@@ -52,7 +52,7 @@
       Tag: "",
       Oxidation: 0,
       Color: '000000',
-      Ions: {}
+      Ions: []
     },
     Id: 0,
     Description: "",
@@ -61,7 +61,7 @@
     Tag: "",
     Oxidation: 0,
     Color: '000000',
-    Ions: {},
+    Ions: [],
     /**
      * Element.UpdateDefaults().
      *
@@ -69,9 +69,8 @@
      */
     UpdateDefaults: function () {
       var that = this,
-        i,
         defaults = that.get('_defaults'),
-        Ions = that.get('Ions');
+        i;
 
       for(i in defaults) {
         if (i !== 'Ions') {
@@ -80,19 +79,20 @@
       }
 
       // apply removed ions
-      for(i in defaults.Ions) {
-        if (!Ions.hasOwnProperty(i)) {
+      defaults.Ions.forEach(function (defaultIon, defaultsIndex, defaultIonsEnumerable) {
+        if (that.get('Ions').find(function (ion, ionsIndex, ionsEnumerable) { return ion.Element === defaultIon.Element; }) === null) {
           delete defaults.Ions[i];
         }
-      }
+      });
 
       that.SaveTemporaryIons();
 
-      for(i in Ions) {
-        if (defaults.Ions[i] instanceof Ember.Object) {
-          defaults.Ions[i].set('Count', Ions[i].Count);
+      that.get('Ions').forEach(function (ion, index, enumerable) {
+        var defaultIon = defaults.Ions.find(function (defaultIon, defaultsIndex, defaultsEnumerable) { return ion.Element === defaultIon.Element; });
+        if (defaultIon !== null) {
+          defaultIon.set('Count', ion.get('Count'));
         }
-      }
+      });
       //that.set('_defaults', defaults);
     },
     /**
@@ -101,29 +101,22 @@
      * Prepares data for ajax sending.
      */
     PrepareData: function () {
-      var that = this,
-        Ions = that.get('Ions'),
-        data = {
-          id: that.get('Id'),
-          symbol: that.get('Symbol'),
-          description: that.get('Description'),
-          atomic_mass: that.get('AtomicMass'),
-          tag: that.get('Tag'),
-          oxidation: that.get('Oxidation'),
-          color: that.get('Color'),
-          ions: [],
-        };
-        
-      for(var i in Ions) {
-        if (Ions[i] instanceof Ember.Object) {
-          data.ions.pushObject({
-            element: Ions[i].Element.Symbol,
-            count: Ions[i].Count
-          });
-        }
-      }
-      
-      return data;
+      var that = this;
+      return {
+        id: that.get('Id'),
+        symbol: that.get('Symbol'),
+        description: that.get('Description'),
+        atomic_mass: that.get('AtomicMass'),
+        tag: that.get('Tag'),
+        oxidation: that.get('Oxidation'),
+        color: that.get('Color'),
+        ions: that.get('Ions').map(function (ion, index, enumerable) {
+          return {
+            element: ion.Element.Symbol,
+            count: ion.Count
+          };
+        }),
+      };
     },
     /**
      * Element.Commit().
@@ -143,41 +136,28 @@
      */
     Changed: function () {
       var isChanged = false,
-        defaults = this.get('_defaults'),
-        k,i;
+        that = this,
+        defaults = that.get('_defaults'),
+        k;
       for (k in defaults) {
         if (k !== 'Ions') {
-          if (defaults[k] !== this.get(k)) {
+          if (defaults[k] !== that.get(k)) {
             isChanged = true;
             break;
           }
         }
       }
 
-      var Ions = this.get('Ions');
-      
-      var count = 0;
-      for(var i in Ions) {
-        if (Ions[i] instanceof Ember.Object) {
-          count++;
+      if (!isChanged) {
+        if ((that.get('Ions').length !== defaults.Ions.length) || (null !== defaults.Ions.find(function (defaultIon, defaultsIndex, defaultIonsEnumerable) {
+            return (null !== that.get('Ions').find(function (ion, ionsIndex, ionsEnumerable) {
+              return (ion.get('Element') === defaultIon.get('Element')) && (ion.get('Count') !== defaultIon.get('Count'));
+            }));
+          }))) {
+          isChanged == true;
         }
       }
-      var defaultCount = 0;
-      for(var i in defaults.Ions) {
-        if (defaults.Ions[i] instanceof Ember.Object) {
-          defaultCount++;
-        }
-      }
-      if (count == defaultCount) {
-        for(var ion in defaults.Ions) {
-          if ((typeof Ions[ion] === 'undefined') || (defaults.Ions[ion].Count !== Ions[ion].Count)) {
-            isChanged = true;
-            break;
-          }
-        }
-      } else {
-        isChanged = true;
-      }
+
       return isChanged;
     },
     /**
@@ -244,34 +224,34 @@
      * Для восстановления используется (Array)this.get('_defaults');
      */
     Rollback: function () {
-      var defaults = this.get('_defaults'),
-        key, i,
-        Ions = this.get('Ions');
-
+      var that = this,
+        defaults = that.get('_defaults'),
+        i;
       // Простые поля переносятся скопом.
       for(i in defaults) {
         if (i !== 'Ions') {
-          this.set(i, defaults[i]);
+          that.set(i, defaults[i]);
         }
       }
 
-      this.RemoveTemporaryIons();
+      that.RemoveTemporaryIons();
 
-      for(i in defaults.Ions) {
-        if (defaults.Ions[i] instanceof Ember.Object) {
-          if (!Ions.hasOwnProperty(i)) {
-            this.AddIon(defaults.Ions[i].Element, defaults.Ions[i].Count);
+      defaults.Ions.forEach(function (defaultIon, defaultsIndex, defaultsEnumerable) {
+        if (null === that.get('Ions').find(function (ion, ionsIndex, ionsEnumerable) {
+          return (ion.get('Element') === defaultIon.get('Element'));
+        })) {
+          that.AddIon(defaultIon.Element, defaultIon.Count);
+        }
+      });
+
+      defaults.Ions.forEach(function (defaultIon, defaultsIndex, defaultsEnumerable) {
+        that.get('Ions').forEach(function (ion, ionsIndex, ionsEnumerable) {
+          if (ion.get('Element') === defaultIon.get('Element')) {
+            ion.set('Count', defaultIon.get('Count'));  
           }
-        }
-      }
-
-      var Ions = this.get('Ions');
-      for(var ion in defaults.Ions) {
-        if (Ions[ion] instanceof Ember.Object) {
-          Ions[ion].set('Count', defaults.Ions[ion].Count);  
-        }
-      }
-      this.set('Ions', Ions);
+        });
+      });
+      //this.set('Ions', Ions);
     },
 
     /**
@@ -323,100 +303,109 @@
       this.DestroyDeleteForm();
     },
     AddIon: function (Element, Count, temporary = false) {
-      //var ion = Ember.Object.create({'Element': Element, 'Count': parseInt(Count), 'Host': this});
-      //ion.controller = Ember.ObjectController.create({ content: ion });
-      //ion.view = GrowCalc.IonView.create({ controller: ion.controller });
-      //if (this.editorView) {
-      //  this.editorView.ElementIonsView.get('childViews').pushObject(ion.view);
-      //}
-      //var Ions = this.get('Ions');
-      //Ions[Element.Symbol] = ion;
-      //if (!temporary) {
-      //  this.get('_defaults').Ions[Element.Symbol] = Ember.Object.create({'Element': Element, 'Count': parseInt(Count)});
-      //}
+      var ion = Ember.Object.create({'Element': Element, 'Count': parseInt(Count), 'Host': this});
+      ion.controller = Ember.ObjectController.create({ content: ion });
+      ion.view = GrowCalc.IonView.create({ controller: ion.controller });
+      if (this.hasOwnProperty('editorView')) {
+        this.editorView.get('ElementIonsView').get('childViews').pushObject(ion.view);
+      }
+      this.get('Ions').pushObject(ion);
+      if (!temporary) {
+        this.SetIonPermanent(ion);
+      }
     },
     RemoveIon: function (Element, temporary = false) {
-      //var Ions = this.get('Ions');
-      //if (Ions[Element.Symbol] instanceof Ember.Object) {
-      //  var ion = Ions[Element.Symbol];
-      //  this.editorView.ElementIonsView.get('childViews').removeObject(ion.view);
-      //  delete ion.controller;
-      //  delete ion.view;
-      //  delete Ions[Element.Symbol];
-      //  if (!temporary) {
-      //    delete this.get('_defaults').Ions[Element.Symbol];
-      //  }
-      //}
+      var defaults = this.get('_defaults'),
+        ion = this.get('Ions').find(function (ion, ionsIndex, ionsEnumerable) {
+          return (ion.get('Element') === Element);
+        });
+      if (ion !== null) {
+        if (this.hasOwnProperty('editorView')) {
+          this.editorView.get('ElementIonsView').get('childViews').removeObject(ion.view);
+        }
+        this.get('Ions').removeObject(ion);
+        if (!temporary) {
+          this.SetIonTemporary(ion); // deletes ion from defaults.
+        }
+
+        ion.controller.destroy();
+        ion.view.destroy();
+        ion.destroy();
+      }
     },
     RemoveTemporaryIons: function () {
-      //var Ions = this.get('Ions'),
-      //  defaults = this.get('_defaults');
-      //for(var i in Ions) {
-      //  if (Ions[i] instanceof Ember.Object) {
-      //    if (!defaults.Ions.hasOwnProperty(i)) {
-      //      this.RemoveIon(Ions[i].Element, true);
-      //    }
-      //  }
-      //}
+      var that = this,
+        defaults = this.get('_defaults');
+      this.get('Ions').forEach(function (ion, ionsIndex, ionsEnumerable) {
+        if (null === defaults.Ions.find(function (defaultIon, defaultsIndex, defaultsEnumerable) {
+          return (ion.get('Element') === defaultIon.get('Element'));
+        })) {
+          that.RemoveIon(ion.Element, true);
+        }
+      });
     },
-    SetIonPermanent: function(Ion) {
-      //if (!this.get('_defaults').Ions.hasOwnProperty(Ion.Element.Symbol)) {
-      //  this.get('_defaults').Ions[Ion.Element.Symbol] = Ember.Object.create({'Element': Ion.Element, 'Count': parseInt(Ion.Count)});
-      //}
+    SetIonPermanent: function(ion) {
+      var that = this,
+        defaults = that.get('_defaults');
+      if (null === defaults.Ions.find(function (defaultIon, defaultsIndex, defaultsEnumerable) {
+        return (ion.get('Element') === defaultIon.get('Element'));
+      })) {
+        defaults.Ions.pushObject(Ember.Object.create({
+          'Element': ion.Element, 
+          'Count': ion.Count,
+        }));
+      }
     },
     SetIonTemporary: function(ion) {
-      //if (this.get('_defaults').Ions.hasOwnProperty(ion)) {
-      //  delete this.get('_defaults').Ions[ion];
-      //} 
+      var that = this,
+        defaults = that.get('_defaults'),
+        defaultIon = defaults.Ions.find(function (defaultIon, defaultsIndex, defaultsEnumerable) {
+          return (ion.get('Element') === defaultIon.get('Element'));
+        });
+      if (null !== defaultIon) {
+        defaults.Ions.removeObject(defaultIon);
+        defaultIon.destroy();
+      }
     },
     SaveTemporaryIons: function () {
-      //var Ions = this.get('Ions'),
-      //  defaults = this.get('_defaults');
-      //for(var i in Ions) {
-      //  if (Ions[i] instanceof Ember.Object) {
-      //    if (!defaults.Ions.hasOwnProperty(i)) {
-      //      this.SetIonPermanent(Ions[i]);
-      //    }
-      //  }
-      //}
+      var that = this,
+        defaults = this.get('_defaults');
+      that.get('Ions').forEach(function (ion, ionsIndex, ionsEnumerable) {
+        if (null === defaults.Ions.find(function (defaultIon, defaultsIndex, defaultsEnumerable) {
+          return (ion.get('Element') === defaultIon.get('Element'));
+        })) {
+          that.SetIonPermanent(ion);
+        }
+      });
     },
     ListElements: function () {
-      var Ions = this.get('Ions'),
-        totalIons = {},
-        ion,
-        ionsCount = 0;
+      var totalIons = {};
 
-      for (ion in Ions) if (Ions.hasOwnProperty(ion)) {
-        ionsCount = ionsCount + 1;
-        var list = Ions[ion].Element.ListElements();
+      this.get('Ions').forEach(function (ion, ionsIndex, ionsEnumerable) {
+        var list = ion.get('Element').ListElements();
         for(var i in list) {
-          if (typeof totalIons[list[i].Element.Symbol] !== 'undefined') {
-            totalIons[list[i].Element.Symbol].set('Amount', totalIons[list[i].Element.Symbol].get('Amount') + Ions[ion].Count * list[i].Amount);
-          } else {
-            totalIons[list[i].Element.Symbol] = {
-              Element: list[i].Element,
-              Amount: Ions[ion].Count * list[i].Amount
-            };
+          if (list.hasOwnProperty(i)) {
+            if (typeof totalIons[list[i].get('Element').get('Symbol')] !== 'undefined') {
+              totalIons[list[i].get('Element').get('Symbol')].set('Amount', totalIons[list[i].get('Element').get('Symbol')].get('Amount') + ion.get('Count') * list[i].get('Amount'));
+            } else {
+              totalIons[list[i].get('Element').get('Symbol')] = {
+                Element: list[i].get('Element'),
+                Amount: ion.get('Count') * list[i].get('Amount'),
+              };
+            }
           }
         }
-      }
+      });
 
-      if (ionsCount === 0) {
-        if (typeof totalIons[this.Symbol] !== 'undefined') {
-          totalIons[this.Symbol].set('Amount', totalIons[this.Symbol].get('Amount'));
-        } else {
-          totalIons[this.Symbol] = {
-            Element: this,
-            Amount: 1
-          };
-        }
+      if (this.get('Ions').length === 0) {
+        totalIons[this.Symbol] = {
+          Element: this,
+          Amount: 1,
+        };
       }
 
       return totalIons;
     },
-    SymbolChanged: function () {
-      GrowCalc.Elements[this.get('Symbol')] = this;
-    }.observes('Symbol'),
   });
 
   GrowCalc.ElementController = Ember.ObjectController.extend({
@@ -445,62 +434,56 @@
   });
 
 
-  //GrowCalc.IonView = Ember.View.extend({
-  //  controller: null,
-  //  template: Ember.Handlebars.compile('<li>{{view.controller.content.Element.Symbol}} {{view GrowCalc.NumberField valueBinding="view.controller.content.Count"}}<a {{action "Delete" target on="click"}}>Удалить</a></li>'),
-  //  Delete: function () {
-  //    this.controller.content.Host.RemoveIon(this.controller.content.Element, true);
-  //  }
-  //});
+  GrowCalc.IonView = Ember.View.extend({
+    controller: null,
+    template: Ember.Handlebars.compile('<li>{{view.controller.content.Element.Symbol}} {{view GrowCalc.NumberField valueBinding="view.controller.content.Count"}}<button class="action action-delete" {{action "Delete" target on="click"}} title="Удаление"><span class="ui-icon ui-icon-close"></span></button></li>'),
+    Delete: function () {
+      this.controller.content.Host.RemoveIon(this.controller.content.Element, true);
+    }
+  });
 
-  //GrowCalc.NewIonView = Ember.View.extend({
-  //  Element: undefined,
-  //  Count: 0,
-  //  Host: undefined,
-  //  template: Ember.Handlebars.compile('<li>{{view JQ.AutoComplete valueBinding="view.ElementSymbol" sourceBinding="view.ElementAutocomplete" selectBinding="view.ElementSelected"}}<a {{action "Create" target on="click"}}>Добавить</a></li>'),
-  //  Create: function () {
-  //    var isContains = false;
-  //    for(var i in this.Host.Ions) {
-  //      isContains = isContains || ((this.Host.Ions[i] instanceof Ember.Object) && (this.Host.Ions[i].Element === this.Element));
-  //    }
-  //    if (!isContains) {
-  //      if (this.get('Element')) {
-  //        this.Host.AddIon(this.get('Element'), this.get('Count'), true);
-  //      } else {
-  //        alert('Такого элемента не существует');
-  //      }
-  //    } else {
-  //      alert('Элемент уже содержится.');
-  //    }
-  //  },
-  //  ElementSymbol: "",
-  //  ElementSelected: function (e, ui) {
-  //    var element = GrowCalc.GetElementBySymbol(ui.item.label);
-  //    if (element) {
-  //      this._context.content.editorView.ElementIonsView.get('childViews')[0].set('Element', element);
-  //    }
-  //  },
-  //  ElementAutocomplete: function(request, response) {
-  //    var value,
-  //      ret = [];
-  //    for(value in GrowCalc.Elements) {
-  //      if (GrowCalc.Elements.hasOwnProperty(value)) {
-  //        if ((request.term.length == 0) || (GrowCalc.Elements[value].get('Symbol').indexOf(request.term) !== -1) || (GrowCalc.Elements[value].get('Description').indexOf(request.term) !== -1)) {
-  //          //ret.push({
-  //          //  label: AutocompleteObjects[value].title,
-  //          //  value: AutocompleteObjects[value].id
-  //          //});
-  //          ret.push(GrowCalc.Elements[value].Symbol);
-  //        }
-  //      }
-  //    }
-  //    response(ret);
-  //  },
-  //});
+  GrowCalc.NewIonView = Ember.View.extend({
+    Count: 1,
+    Host: undefined,
+    ElementSymbol: "",
+    template: Ember.Handlebars.compile('<li>{{view JQ.AutoComplete valueBinding="view.ElementSymbol" sourceBinding="view.ElementAutocomplete" selectBinding="view.ElementSelected"}}<a {{action "Create" target on="click"}}>Добавить</a></li>'),
+    Create: function () {
+      var that = this,
+        element = GrowCalc.GetElementBySymbol(that.get('ElementSymbol'));
+      if (element) {
+        if (typeof this.get('Host.Ions').find(function (ion, index, enumerable) {
+          return (ion.get('Element') === element);
+        }) === 'undefined') {
+          that.get('Host').AddIon(element, that.get('Count'), true);
+        } else {
+          alert('Элемент уже содержится.');
+        }
+      } else {
+        alert('Неправильный ввод.');
+      }
+    },
+    ElementSelected: function (e, ui) {
+      var that = this._context.content.editorView.get('ElementIonsView.childViews')[0];
+      that.set('ElementSymbol', ui.item.value);
+    },
+    ElementAutocomplete: function(request, response) {
+      var ret = [];
+      GrowCalc.Elements.forEach(function (element, index) {
+        if ((request.term.length == 0) || (element.get('Symbol').indexOf(request.term) !== -1) || (element.get('Description').indexOf(request.term) !== -1)) {
+          ret.pushObject({
+            label: element.get('Description'),
+            value: element.get('Symbol'),
+          });
+        }
+      });
 
-  //GrowCalc.ElementIonsView = Ember.ContainerView.extend({
-  //  childViews: [],
-  //});
+      response(ret);
+    }
+  });
+
+  GrowCalc.ElementIonsView = Ember.ContainerView.extend({
+    childViews: [],
+  });
 
   GrowCalc.ElementEditorView = JQ.Dialog.extend({
     classNames: ['element-editor-dialog'],
@@ -508,30 +491,20 @@
     minWidth: 400,
     controller: null,
     title: "",
-    //ElementIonsView: GrowCalc.ElementIonsView.create(),
+    ElementIonsView: null,
     template: Ember.Handlebars.compile(
-        '<table><tr>' +
-          '<td><label>Символ</label></td>' +
-          '<td>{{view Ember.TextField valueBinding="view.controller.content.Symbol"}}</td>' +
+      '<table class="table">' +
+        '<tr>' +
+          '<td><label>Символ</label>{{view Ember.TextField valueBinding="view.controller.content.Symbol"}}</td>' +
+          '<td><label>Описание</label>{{view Ember.TextField valueBinding="view.controller.content.Description"}}</td>' +
         '</tr>' +
         '<tr>' +
-          '<td><label>Описание</label></td>' +
-          '<td>{{view Ember.TextArea valueBinding="view.controller.content.Description"}}</td>' +
+          '<td><label>Атомарная масса</label>{{view GrowCalc.NumberField valueBinding="view.controller.content.AtomicMass"}}</td>' +
+          '<td><label>Степень окисления</label>{{view GrowCalc.NumberField valueBinding="view.controller.content.Oxidation"}}</td>' +
         '</tr>' +
-        '<tr>' +
-          '<td><label>Атомарная масса</label></td>' +
-          '<td>{{view GrowCalc.NumberField valueBinding="view.controller.content.AtomicMass"}}</td>' +
-        '</tr>' +
-        '<tr>' +
-          '<td><label>Степень окисления</label></td>' +
-          '<td>{{view GrowCalc.NumberField valueBinding="view.controller.content.Oxidation"}}</td>' +
-        '</tr>' +
-        '<tr>' +
-          '<td colspan="2"><label>Цвет</label>' +
-          '<br />' +
-          '{{view GrowCalc.ColorPicker valueBinding="view.controller.content.Color"}}</td>' +
-        '</tr>' +
-        '</table>'
+      '</table>' +
+      '<div>{{view GrowCalc.ColorPicker valueBinding="view.controller.content.Color"}}</div>' +
+      '{{view Ember.ContainerView currentViewBinding="view.ElementIonsView"}}'
     ),
     buttons: {
       'Сохранить': function () {
@@ -548,9 +521,13 @@
       },
     },
     didInsertElement: function() {
-      this.set('title', 'Редактирование элемента "' + this.controller.content.get('Symbol') + '"');
-      this._super();
-      $("button", this.$()).button();
+      var that = this,
+        element = that.controller.content;
+
+      that.set('ElementIonsView', GrowCalc.ElementIonsView.create());
+      that.set('title', 'Элемент "' + element.get('Symbol') + '"');
+      that._super();
+      $("button", that.$()).button();
 
       // autocomplete staff
       //var value = this.controller.content.get('AutocompleteField');
@@ -559,19 +536,12 @@
       //  this.set('AutocompleteTitle', valueTitle);
       //}
 
-      //var newIonView = GrowCalc.NewIonView.create({ Host: this.controller.content });
-      //this.ElementIonsView.get('childViews').pushObject(newIonView);
-      var ions = this.controller.content.get('Ions');
-      for(var i in ions) {
-        if (ions[i] instanceof Ember.Object) {
-          var ion = ions[i];
-          //this.ElementIonsView.get('childViews').pushObject(ion.view);
-        }
-      }
+      var newIonView = GrowCalc.NewIonView.create({ Host: element });
+      that.get('ElementIonsView').get('childViews').pushObject(newIonView);
+      element.get('Ions').forEach(function (ion, index, enumerable) {
+        that.get('ElementIonsView').get('childViews').pushObject(ion.view);
+      });
     },
-    //IonsChanged: function () { 
-    //  alert('ions changed');
-    //}.observes('controller.content.Ions'),
     Validate: function () {
       var retValue = true;
       var element = this.controller.content;
@@ -632,47 +602,51 @@
   });
 
   // Массив _всех_ элементов, загруженных на текущей странице.
-  GrowCalc.Elements = {};
+  GrowCalc.Elements = [];
 
-  GrowCalc.GetElementBySymbol = function (symbol) {
-    if (typeof GrowCalc.Elements[symbol] !== 'undefined') {
-      return GrowCalc.Elements[symbol];
-    } else {
-      return false;
-    }
+  GrowCalc.GetElementsBy = function (field, value, regexp) {
+    if (typeof regexp === 'undefined') regexp = false;
+    regexp = regexp && new RegExp(value);
+
+    return GrowCalc.Elements.filter(function(item, index, self) {
+      if (regexp) {
+        return regexp.test(item.get(field));
+      } else {
+        return (item.get(field) == value);
+      }
+    });
   };
 
   GrowCalc.GetElementById = function (id) {
-    var isContains = false;
-    for(var i in GrowCalc.Elements) {
-      if (GrowCalc.Elements[i] instanceof Ember.Object) {
-        if (GrowCalc.Elements[i].Id == id) {
-          isContains = true;
-          return GrowCalc.Elements[i];
-        }
-      }
-    }
-  
-    return false;
+    return GrowCalc.GetElementsBy('Id', id)[0];
   };
+
+  GrowCalc.GetElementBySymbol = function (symbol) {
+    var val = GrowCalc.GetElementsBy('Symbol', symbol)[0];
+    return val;
+  };
+
 
   GrowCalc.AddElement = function(values) {
     var el = GrowCalc.GetElementBySymbol(values['Symbol']);
     if (!el) {
+      var ions = values.Ions;
+      values.Ions = [];
       values['_defaults'] = $.extend({}, values);
-      el = GrowCalc.Elements[values['Symbol']] = GrowCalc.Element.create(values);
+      el = GrowCalc.Element.create(values);
+      GrowCalc.Elements.pushObject(el);
+
+      if (typeof ions !== 'undefined') {
+        ions.forEach( function (item, index, enumerable) {
+          el.AddIon(GrowCalc.GetElementBySymbol(item.element), item.count);
+        });
+      }
 
       el.controller = GrowCalc.ElementController.create({ content: el });
       el.view = GrowCalc.ElementView.create({ controller: el.controller });
       
       if ($('#calc-elements .nav-elements').length > 0) {
         el.view.appendTo($('#calc-elements .nav-elements'));
-      }
-
-      if (typeof values.Ions !== 'undefined') {
-        values.Ions.forEach( function (item, index, enumerable) {
-          el.AddIon(GrowCalc.GetElementBySymbol(item.element), item.count);
-        });
       }
     }
 

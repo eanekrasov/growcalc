@@ -162,124 +162,14 @@
 
   JQ.Combobox = Ember.Select.extend(JQ.Widget, {
     uiType: 'autocomplete',
-    uiOptions: ['disabled', 'autoFocus', 'delay', 'minLength', 'position', 'source'],
-    uiEvents: ['selected'],
+    uiOptions: ['appendTo','autoFocus','delay', 'disabled', 'minLength','position','source'],
+    uiEvents: ['change', 'close', 'create', 'focus', 'open', 'response', 'search', 'select'],
     didInsertElement: function () {
+      //this._super();
+    },
+    willDestroyElement: function () {
       this._super();
-      this.$().data('view', this);
-  
-      var input,
-        that = this,
-        select = $(that.get('element')).hide(),
-        selected = select.children(":selected"),
-        value = selected.val() ? selected.text() : "",
-        wrapper = that.wrapper = $("<span>")
-          .addClass("ui-combobox")
-          .insertAfter(select);
-      function removeIfInvalid(element) {
-        var value = $(element).val(),
-          matcher = new RegExp("^" + $.ui.autocomplete.escapeRegex(value) + "$", "i"),
-          valid = false;
-        select.children("option").each(function (index, value) {
-          if ($(value).text().match(matcher)) {
-            value.selected = valid = true;
-            return false;
-          }
-        });
-        if (!valid) {
-          // remove invalid value, as it didn't match anything
-          $(element)
-            .val("")
-            .attr("title", value + " didn't match any item");
-//TODO:                      .tooltip( "open" );
-          select.val("");
-          setTimeout(function () {
-//TODO:                      input.tooltip( "close" ).attr( "title", "" );
-          }, 2500);
-          input.data("autocomplete").term = "";
-          return false;
-        }
-      }
-
-      input = $("<input>")
-        .appendTo(wrapper)
-        .val(value)
-        .attr("title", "")
-        .addClass("ui-state-default ui-combobox-input")
-        .autocomplete({
-          delay: 0,
-          minLength: 0,
-          source: function (request, response) {
-            var matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), "i");
-            response(select.children("option").map(function (element, index, array) {
-              var text = $(element).text();
-              if (element.value && (!request.term || matcher.test(text)))
-                return {
-                  label: text.replace(
-                    new RegExp(
-                      "(?![^&;]+;)(?!<[^<>]*)(" +
-                      $.ui.autocomplete.escapeRegex(request.term) +
-                      ")(?![^<>]*>)(?![^&;]+;)", "gi"
-                  ), "<strong>$1</strong>"),
-                  value: text,
-                  option: element,
-                };
-            }));
-          },
-          select: function (event, ui) {
-            ui.item.option.selected = true;
-            this.set('value', ui.item.option.value);
-          },
-          change: function (event, ui) {
-            if (!ui.item)
-              return removeIfInvalid(this);
-          }
-        })
-        .addClass("ui-widget ui-widget-content ui-corner-left");
-
-      input.data("autocomplete")._renderItem = function (ul, item) {
-        return $("<li>")
-          .data("item.autocomplete", item)
-          .append("<a>" + item.label + "</a>")
-          .appendTo(ul);
-      };
-
-      $("<a>")
-        .attr("tabIndex", -1)
-        .attr("title", "Show All Items")
-//TODO:              .tooltip()
-        .appendTo(wrapper)
-        .button({
-          icons: {
-            primary: "ui-icon-triangle-1-s"
-          },
-          text: false
-        })
-        .removeClass("ui-corner-all")
-        .addClass("ui-corner-right ui-combobox-toggle")
-        .click(function () {
-          // close if already visible
-          if (input.autocomplete("widget").is(":visible")) {
-            input.autocomplete("close");
-            removeIfInvalid(input);
-            return;
-          }
-
-          // work around a bug (likely same cause as #5265)
-          $(this).blur();
-
-          // pass empty string as value to search for, displaying all results
-          input.autocomplete("search", "");
-          input.focus();
-        });
-
-  //TODO:              input
-  //                  .tooltip({
-  //                      position: {
-  //                          of: this.button
-  //                      },
-  //                      tooltipClass: "ui-state-highlight"
-  //                  });
     }
   });
+
 })(window, window.document);
