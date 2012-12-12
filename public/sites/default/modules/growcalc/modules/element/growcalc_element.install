@@ -9,7 +9,7 @@
  * Implements hook_install().
  */
 function growcalc_element_install() {
-// During installation, the t() function is unavailable, so we use get_t()
+  // During installation, the t() function is unavailable, so we use get_t()
   // to store the name of the translation function.
   $t = get_t();
 
@@ -35,8 +35,6 @@ function growcalc_element_install() {
 
   //We add a body field and set the body label immediately.
   //node_add_body_field($content_type, $t('Description'));
-
-
 
   // Save the content type
   node_type_save($content_type);

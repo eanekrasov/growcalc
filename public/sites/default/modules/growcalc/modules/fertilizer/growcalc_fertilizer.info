@@ -1,5 +1,5 @@
-name = Growcalc Fertilizer (Model)
-description = Provides entity functionality as an example to use in your own development projects
+name = Growcalc Fertilizer
+description = Provides "Fertilizer" node type
 core = 7.x
 
 package = GrowCalc
@@ -10,11 +10,5 @@ dependencies[] = views
 dependencies[] = field_collection
 dependencies[] = entityreference
 
-
 files[] = growcalc_fertilizer.admin.inc
-files[] = growcalc_fertilizer_type.admin.inc
 files[] = views/growcalc_fertilizer.views.inc
-files[] = views/growcalc_fertilizer_handler_link_field.inc
-files[] = views/growcalc_fertilizer_handler_delete_link_field.inc
-files[] = views/growcalc_fertilizer_handler_edit_link_field.inc
-files[] = views/growcalc_fertilizer_handler_operations_links_field.inc

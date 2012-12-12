@@ -170,12 +170,6 @@ function growcalc_element_update($element, $values) {
 
   node_submit($element);
   node_save($element);
-  //$element_wrapper->save();
-  //foreach($element_wrapper->growcalc_ions as $ion) {
-  //  dsm($ion->growcalc_element->title->value());
-  //  dsm($ion->count->value());
-  //}
-  //dsm($element->growcalc_ions);
 
   return $element;
 }
@@ -328,7 +322,7 @@ function growcalc_element_block_contents($which_block) {
           <div class="calc-elements-control-group">
             <div class="controls">'.$filter.'</div>
           </div>
-          <div id="calc-elements"><ul class="nav nav-list nav-elements"></ul></div>
+          <div id="calc-elements"></div>
         </div>');
   }
 }

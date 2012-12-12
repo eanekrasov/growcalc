@@ -82,6 +82,7 @@ function growcalc_init() {
 
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.list-filter.js');
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/ember-jquery-ui-mixin.js');
+      drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/JSON.js');
 
       drupal_add_css(drupal_get_path('module', 'growcalc') . '/css/growcalc.css');
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/growcalc.js');

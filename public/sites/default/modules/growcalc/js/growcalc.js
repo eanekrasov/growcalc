@@ -20,7 +20,7 @@
     PrepareData: function () {
       return [];
     },
-    IsNew: function () {
+    IsTemporary: function () {
       var key = this.get(this.get('PrimaryKey'));
       return (key === 0);
     },
@@ -28,11 +28,12 @@
 
   GrowCalc.Drupal = function () {
     var drupal = (function () {
-      // private interface
-      var status = true; // online/offline status.
-
-      // public interface
+      var supportLocalStorage = ('localStorage' in window) && window['localStorage'] !== null,
+        // private interface
+        status = true; // online/offline status.
+        // public interface
       return {
+        supportLocalStorage: supportLocalStorage,
         Save: function (v) {
           if (status) {
             $.ajax({
@@ -46,19 +47,27 @@
                 if (v.hasOwnProperty('failure')) v.failure(jqXHR, textStatus, errorThrown);
               }
             });
+          } else {
+            localStorage[v.object.toString()] = JSON.stringify(v.object.PrepareData());
+
+            handle_storage();
           }
         },
         Delete: function (v) {
-          if (!v.object.IsNew()) {
-            $.ajax({
-              type: 'POST',
-              url: v.object.GetDeleteUrl(),
-              success: function (data) {
-                if (v.success) {
-                  v.success(data);
+          if (status) {
+            if (!v.object.IsTemporary()) {
+              $.ajax({
+                type: 'POST',
+                url: v.object.GetDeleteUrl(),
+                success: function (data) {
+                  if (v.success) {
+                    v.success(data);
+                  }
                 }
-              }
-            });
+              });
+            }
+          } else {
+            localStorage.removeItem(v.object.toString());
           }
         },
         SetStatus: function (newStatus) {
@@ -76,6 +85,39 @@
 
     return drupal;
   };
+
+  GrowCalc.LocalStorageView = JQ.Dialog.extend({
+    classNames: ['local-storage-dialog'],
+    width: 100,
+    minWidth: 100,
+    autoOpen: true,
+    title: "localStorage",
+    template: Ember.Handlebars.compile(
+      '<p>Status: {{Status}}</p>' +
+      '<button class="action action-toggle-status" {{action "ToggleStatus" target on="click"}} title="Переключить режим"><span class="ui-icon ui-icon-check"></span></button>' +
+      '<button class="action action-clear" {{action "Clear" target on="click"}} title="Очистить локальное хранилище"><span class="ui-icon ui-icon-trash"></span></button>'
+    ),
+    Status: GrowCalc.Drupal().GetStatus() ? 'online' : 'offline',
+    ToggleStatus: function () {
+      GrowCalc.Drupal().SetStatus(!GrowCalc.Drupal().GetStatus());
+      this.set('Status', GrowCalc.Drupal().GetStatus() ? 'online' : 'offline');
+      $(this.$('.action-toggle-status .ui-icon'))
+        .toggleClass('ui-icon-check', GrowCalc.Drupal().GetStatus())
+        .toggleClass('ui-icon-cancel', !GrowCalc.Drupal().GetStatus());
+    },
+    Clear: function () {
+      localStorage.clear();
+    },
+    didInsertElement: function() {
+      var that = this;
+      that._super();
+      $("button", that.$()).button();
+    }
+  });
+
+  $(function() {
+    GrowCalc.localStorageView = GrowCalc.LocalStorageView.create().appendTo(document);
+  });
 
   GrowCalc.NumberField = Ember.TextField.extend({
     // implementation of this function, see http://stackoverflow.com/a/995193/65542
@@ -220,5 +262,22 @@
       styling: 'jqueryui'
     });
   });
+
+
+  function handle_storage() {
+    $.pnotify({
+      title: "Сохранено локально!",
+      text: "Данные сохранены в локальном хранилище.",
+      type: "success",
+      hide: true,
+      closer: true,
+      sticker: true,
+      icon:  "ui-icon ui-icon-check",
+      opacity: 1,
+      shadow: true,
+      width: $.pnotify.defaults.width,
+      delay: 100
+    });
+  }
 
 })(window.jQuery, window.Ember, window.Drupal, window, window.document);

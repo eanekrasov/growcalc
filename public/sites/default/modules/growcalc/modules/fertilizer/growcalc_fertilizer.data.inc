@@ -7,77 +7,62 @@ $data = array(
     'name' => 'MgSO4',
     'description' => 'Сульфат магния семиводный',
     'tag' => 'Удобрениe',
-    'elements' => array('MgSO4' => 1)
+    'elements' => array(
+      array('element' => 'MgSO4', 'amount' => 1)
+    ),
   ),
   array(
     'name' => 'KNO3',
     'description' => 'Калиевая селитра',
     'tag' => 'Удобрениe',
-    'elements' => array('KNO3' => 1)
+    'elements' => array(
+      array('element' => 'KNO3', 'amount' => 1)
+    ),
   ),
   array(
     'name' => 'Ca(NO3)2*4H2O',
     'description' => 'Кальциевая селитра 4-х водная',
     'tag' => 'Удобрениe',
-    'elements' => array('Ca(NO3)2' => 1)
+    'elements' => array(
+      array('element' => 'Ca(NO3)2', 'amount' => 1)
+    ),
   ),
   array(
     'name' => 'KH2PO4',
     'description' => 'Монокалия фосфат',
     'tag' => 'Удобрениe',
-    'elements' => array('KH2PO4' => 1)
+    'elements' => array(
+      array('element' => 'KH2PO4', 'amount' => 1)
+    ),
   ),
   array(
     'name' => 'Бона форте',
     'description' => 'для декоративно-лиственных растений',
     'tag' => 'Удобрениe',
-    'elements' => array('N' => 0.05, 'P2O5' => 0.03, 'K2O' => 0.04, 'MgO' => 0.01)
+    'elements' => array(
+      array('element' => 'N', 'amount' => 0.05),
+      array('element' => 'P2O5', 'amount' => 0.03),
+      array('element' => 'K2O', 'amount' => 0.04),
+      array('element' => 'MgO', 'amount' => 0.01)
+    ),
   ),
   array(
     'name' => 'Бона форте',
     'description' => 'для всех комнатных растений',
     'tag' => 'Удобрение',
-    'elements' => array('N' => 0.06, 'P2O5' => 0.03, 'K2O' => 0.07, 'MgO' => 0.015)
+    'elements' => array(
+      array('element' => 'N', 'amount' => 0.06),
+      array('element' => 'P2O5', 'amount' => 0.03),
+      array('element' => 'K2O', 'amount' => 0.07),
+      array('element' => 'MgO', 'amount' => 0.015)
+    ),
   ),
 );
 
-  $elements_data = growcalc_element_load_multiple(FALSE);
-  $elements = array();
-  foreach($elements_data as $el) {
-    $elements[$el->name] = $el;
-  }
-
   $fertilizers = array();
-  
   foreach($data as &$data_item) {
-    $entity = entity_get_controller('growcalc_fertilizer')->create();
-    $entity->type = 'growcalc_fertilizer';
-    $entity->name = $data_item['name'];
-    $entity->description = $data_item['description'];
-    $entity->status = 1;
-    growcalc_fertilizer_save($entity);
-    $fertilizers[$entity->name] = $entity;
-
-    // composition
-    if (count($data_item['elements']) !== 0) {
-      foreach($data_item['elements'] as $element_name=>$amount) {
-        if (isset($elements[$element_name])) {
-          $element = entity_create('field_collection_item', array(
-            'field_name'        => 'growcalc_elements',
-            'amount' => array(LANGUAGE_NONE => array(array('value' => $amount))),
-            'growcalc_element' => array(
-              LANGUAGE_NONE => array(
-                array(
-                  'target_id' => $elements[$element_name]->growcalc_element_id,
-                ),
-              ),
-            ),
-          ));
-          $element->setHostEntity('growcalc_fertilizer', $entity);
-          $element->save();    
-        }
-      }
-    }
+    $fertilizer = growcalc_fertilizer_update(growcalc_fertilizer_new(), $data_item);
+    $fertilizers[$fertilizer->title] = $fertilizer;
   }
 
   return $fertilizers;

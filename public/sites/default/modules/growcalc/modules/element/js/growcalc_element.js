@@ -98,7 +98,7 @@
     /**
      * Element.PrepareData().
      *
-     * Prepares data for ajax sending.
+     * Prepares data for saving.
      */
     PrepareData: function () {
       var that = this;
@@ -173,7 +173,7 @@
         object: that,
         success: function (data) {
           if (typeof data.success !== 'undefined' && data.success) {
-            if (that.IsNew()) {
+            if (that.IsTemporary()) {
               that.set('Id', data.id);
             }
             that.UpdateDefaults();
@@ -191,7 +191,7 @@
      */
      Delete: function () {
       var that = this;
-      if (!that.IsNew()) {
+      if (!that.IsTemporary()) {
         GrowCalc.Drupal().Delete({
           object: that,
           success: function (data) {
@@ -213,9 +213,7 @@
      */
     Destroy: function () {
       this.CloseDialogs();
-      this.view.remove();
-      delete this.view;
-      delete this.controller;
+      GrowCalc.Elements.removeObject(this);
     },
     /**
      * Element.Rollback().
@@ -251,19 +249,17 @@
           }
         });
       });
-      //this.set('Ions', Ions);
     },
-
     /**
      * Element.ShowEditorForm().
      *
-     * Открыть форму редактирования товара.
+     * Открыть форму редактирования элемента.
      * Форма рендерится в JQuery UI Dialog.
      */
     ShowEditorForm: function () {
       var that = this;
       if (typeof that.editorView === 'undefined') {
-        that.editorView = GrowCalc.ElementEditorView.create({ controller: that.controller, autoOpen: true });
+        that.editorView = GrowCalc.ElementEditorView.create({ content: that, autoOpen: true });
         that.editorView.appendTo(document);
       } else {
         that.editorView.OpenDialog();
@@ -278,7 +274,7 @@
     ShowDeleteForm: function () {
       var that = this;
       if (typeof that.deleteView === 'undefined') {
-        that.deleteView = GrowCalc.ElementDeleteView.create({ controller: that.controller, autoOpen: true });
+        that.deleteView = GrowCalc.ElementDeleteView.create({ content: that, autoOpen: true });
         that.deleteView.appendTo(document);
       } else {
         that.deleteView.OpenDialog();  
@@ -302,10 +298,10 @@
       this.DestroyEditorForm();
       this.DestroyDeleteForm();
     },
-    AddIon: function (Element, Count, temporary = false) {
+    AddIon: function (Element, Count, temporary) {
+      temporary = temporary || false;
       var ion = Ember.Object.create({'Element': Element, 'Count': parseInt(Count), 'Host': this});
-      ion.controller = Ember.ObjectController.create({ content: ion });
-      ion.view = GrowCalc.IonView.create({ controller: ion.controller });
+      ion.view = GrowCalc.IonView.create({ content: ion });
       if (this.hasOwnProperty('editorView')) {
         this.editorView.get('ElementIonsView').get('childViews').pushObject(ion.view);
       }
@@ -328,7 +324,6 @@
           this.SetIonTemporary(ion); // deletes ion from defaults.
         }
 
-        ion.controller.destroy();
         ion.view.destroy();
         ion.destroy();
       }
@@ -408,37 +403,45 @@
     },
   });
 
-  GrowCalc.ElementController = Ember.ObjectController.extend({
-    MolarMass: function() {
-      return this.get('AtomicMass');
-    }.property('AtomicMass'),
-    ElementBinding: 'content'
-  });
-
-  GrowCalc.ElementView = Ember.View.extend({
-    // the controller is the initial context for the template
-    controller: null,
-    template: Ember.Handlebars.compile(
-      '<li class="element-view-{{unbound Id}}">' +
-      '{{Description}} {{Tag}}' +
-      '<span class="symbol color" style="color: #{{unbound Color}}">{{Symbol}}</span>' +
-      '<button class="action action-edit" {{action "ShowEditorForm" target on="click"}} title="Редактирование"><span class="ui-icon ui-icon-wrench"></span></button>' +
-      '</li>'),
-    ShowEditorForm: function () {
-      this.controller.content.ShowEditorForm(); 
+  GrowCalc.ElementsView = Ember.CollectionView.extend({
+    tagName: 'ul',
+    classNames: ['nav', 'nav-list', 'nav-elements'],
+    contentBinding: 'GrowCalc.Elements',
+    itemViewClass: Ember.View.extend({
+      tagName: 'li',
+      content: null,
+      contextBinding: 'content',
+      template: Ember.Handlebars.compile(
+        '{{Description}} {{Tag}}' +
+        '<span class="symbol color" style="color: #{{unbound Color}}">{{Symbol}}</span>' +
+        '<button class="action action-edit" {{action "ShowEditorForm" target on="click"}} title="Редактирование"><span class="ui-icon ui-icon-wrench"></span></button>'
+      ),
+      doubleClick: function () {
+        this.content.ShowEditorForm(); 
+      },
+      ShowEditorForm: function () {
+        this.content.ShowEditorForm(); 
+      },
+      ColorBinding: 'content.Color',
+      ColorChanged: function () {
+        $('.color', this.$()).css({'color' : '#' + this.get('Color')});
+      }.observes('Color'),
+      didInsertElement:function(){
+        this._super();
+        $("button", this.$()).button();
+      },
+    }),
+    didInsertElement:function(){
+      this._super();
+      $(".block-growcalc-element .filter").listFilter(this.$());
     },
-    ColorBinding: 'controller.content.Color',
-    ColorChanged: function () {
-      $('.color', this.$()).css({'color' : '#' + this.get('Color')});
-    }.observes('Color'),
   });
-
 
   GrowCalc.IonView = Ember.View.extend({
-    controller: null,
-    template: Ember.Handlebars.compile('<li>{{view.controller.content.Element.Symbol}} {{view GrowCalc.NumberField valueBinding="view.controller.content.Count"}}<button class="action action-delete" {{action "Delete" target on="click"}} title="Удаление"><span class="ui-icon ui-icon-close"></span></button></li>'),
+    content: null,
+    template: Ember.Handlebars.compile('<li>{{view.content.Element.Symbol}} {{view GrowCalc.NumberField valueBinding="view.content.Count"}}<button class="action action-delete" {{action "Delete" target on="click"}} title="Удаление"><span class="ui-icon ui-icon-close"></span></button></li>'),
     Delete: function () {
-      this.controller.content.Host.RemoveIon(this.controller.content.Element, true);
+      this.content.Host.RemoveIon(this.content.Element, true);
     }
   });
 
@@ -489,21 +492,21 @@
     classNames: ['element-editor-dialog'],
     width: 400,
     minWidth: 400,
-    controller: null,
+    content: null,
     title: "",
     ElementIonsView: null,
     template: Ember.Handlebars.compile(
       '<table class="table">' +
         '<tr>' +
-          '<td><label>Символ</label>{{view Ember.TextField valueBinding="view.controller.content.Symbol"}}</td>' +
-          '<td><label>Описание</label>{{view Ember.TextField valueBinding="view.controller.content.Description"}}</td>' +
+          '<td><label>Символ</label>{{view Ember.TextField valueBinding="view.content.Symbol"}}</td>' +
+          '<td><label>Описание</label>{{view Ember.TextField valueBinding="view.content.Description"}}</td>' +
         '</tr>' +
         '<tr>' +
-          '<td><label>Атомарная масса</label>{{view GrowCalc.NumberField valueBinding="view.controller.content.AtomicMass"}}</td>' +
-          '<td><label>Степень окисления</label>{{view GrowCalc.NumberField valueBinding="view.controller.content.Oxidation"}}</td>' +
+          '<td><label>Атомарная масса</label>{{view GrowCalc.NumberField valueBinding="view.content.AtomicMass"}}</td>' +
+          '<td><label>Степень окисления</label>{{view GrowCalc.NumberField valueBinding="view.content.Oxidation"}}</td>' +
         '</tr>' +
       '</table>' +
-      '<div>{{view GrowCalc.ColorPicker valueBinding="view.controller.content.Color"}}</div>' +
+      '<div>{{view GrowCalc.ColorPicker valueBinding="view.content.Color"}}</div>' +
       '{{view Ember.ContainerView currentViewBinding="view.ElementIonsView"}}'
     ),
     buttons: {
@@ -517,12 +520,12 @@
       },
       'Удалить': function () {
         var that = Ember.View.views[$(this).attr('id')];
-        that.controller.content.ShowDeleteForm();
+        that.content.ShowDeleteForm();
       },
     },
     didInsertElement: function() {
       var that = this,
-        element = that.controller.content;
+        element = that.content;
 
       that.set('ElementIonsView', GrowCalc.ElementIonsView.create());
       that.set('title', 'Элемент "' + element.get('Symbol') + '"');
@@ -530,7 +533,7 @@
       $("button", that.$()).button();
 
       // autocomplete staff
-      //var value = this.controller.content.get('AutocompleteField');
+      //var value = this.content.get('AutocompleteField');
       //if (value !== 0) {
       //  var valueTitle = AutocompleteObjects[value].title;
       //  this.set('AutocompleteTitle', valueTitle);
@@ -544,7 +547,7 @@
     },
     Validate: function () {
       var retValue = true;
-      var element = this.controller.content;
+      var element = this.content;
       var AtomicMass = parseFloat(element.get('AtomicMass'));
 
       if (AtomicMass < 0) {
@@ -555,14 +558,14 @@
       return retValue;
     },
     CommitAndClose: function () {
-      var node = this.controller.content;
+      var node = this.content;
       if (this.Validate()) {
         node.DestroyEditorForm();
         node.Commit();
       }
     },
     RollbackAndClose: function () {
-      var element = this.controller.content;
+      var element = this.content;
       element.DestroyEditorForm();
       element.Rollback();
     },
@@ -579,24 +582,24 @@
     classNames: ['element-delete-dialog'],
     width: 300,
     minWidth: 300,
-    controller: null,
+    content: null,
     title: "Удалить элемент?",
     template: Ember.Handlebars.compile('<p>Вы действительно хотите удалить "{{Symbol}}"?</p>'),
     buttons: {
       'Удалить': function () {
         var that = Ember.View.views[$(this).attr('id')];
-        that.controller.content.DestroyDeleteForm();
-        that.controller.content.Delete();
+        that.content.DestroyDeleteForm();
+        that.content.Delete();
       },
       'Отмена': function () {
         var that = Ember.View.views[$(this).attr('id')];
-        that.controller.content.DestroyDeleteForm();
+        that.content.DestroyDeleteForm();
       }
     },
     close: function(event, ui) {
       var that = Ember.View.views[$(this).attr('id')];
       if ((typeof event !== 'undefined') && (typeof event.cancelable !== 'undefined') && (event.cancelable)) {
-        that.controller.content.DestroyDeleteForm();
+        that.content.DestroyDeleteForm();
       }
     }
   });
@@ -641,24 +644,43 @@
           el.AddIon(GrowCalc.GetElementBySymbol(item.element), item.count);
         });
       }
-
-      el.controller = GrowCalc.ElementController.create({ content: el });
-      el.view = GrowCalc.ElementView.create({ controller: el.controller });
-      
-      if ($('#calc-elements .nav-elements').length > 0) {
-        el.view.appendTo($('#calc-elements .nav-elements'));
-      }
     }
 
     return el;
   };
 
   $(function() {
+    var i,
+      l,
+      el,
+      el_key;
+
+    GrowCalc.elementsView = GrowCalc.ElementsView.create({}).appendTo('#calc-elements');
+
+    if (GrowCalc.Drupal().supportLocalStorage) {
+      for(i =0, l = localStorage.length; i < l; i++) {
+        el_key = localStorage.key(i);
+        if (el_key.indexOf('Element') !== -1) {
+          el = JSON.parse(localStorage[el_key]);
+          GrowCalc.AddElement({
+            Id: el.id,
+            Symbol: el.symbol,
+            Description: el.description,
+            Tag: el.tag,
+            AtomicMass: el.atomic_mass,
+            Oxidation: el.oxidation,
+            Color: el.color,
+            Ions: el.ions,
+          });
+        }
+      }
+    }
+
     if (typeof Drupal.settings.growcalc !== 'undefined') {
       if (typeof Drupal.settings.growcalc.elements !== 'undefined') {
-        for(var el_key in Drupal.settings.growcalc.elements) {
+        for(el_key in Drupal.settings.growcalc.elements) {
           if (Drupal.settings.growcalc.elements.hasOwnProperty(el_key)) {
-            var el = Drupal.settings.growcalc.elements[el_key];
+            el = Drupal.settings.growcalc.elements[el_key];
             GrowCalc.AddElement({
               Id: el.id,
               Symbol: el.symbol,
@@ -673,9 +695,5 @@
         }
       }
     }
-
-    setTimeout(function () {
-      $(".block-growcalc-element .filter").listFilter($(".block-growcalc-element .nav-elements"));
-    }, 1);
   });
 })(jQuery, Ember, this.GrowCalc, Drupal, this, this.document);
