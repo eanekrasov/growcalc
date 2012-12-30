@@ -1,0 +1,56 @@
+////////////////////////////////////////////////////////////////////////////////
+// "vars" partial
+// --------------------
+//
+////////////////////////////////////////////////////////////////////////////////
+
+//
+// Variables
+////////////////////////////////////////
+
+//
+// Widths
+//
+$first_sidebar_width: 190px;
+$second_sidebar_width: 200px;
+$page_width: 800px;
+
+//
+// Heights
+//
+$navigation_height: 40px;
+$footer_height: 80px;
+
+
+
+$header_bg: linear-gradient(to bottom, #898989 0%, #232323 100%) repeat scroll 0 0 transparent;
+$footer_bg: none;
+$sidebar_first_bg: none;
+$sidebar_second_bg: none;
+$navigation_bg: none;
+$page_bg: #f8f8f8;
+$body_bg: transparent url("../images/body.png") repeat left top;
+
+//
+// Fonts
+//
+$main_font: "Helvetica Neue", helvetica, Arial, sans-serif;
+$monospace_font: "Courier New", "DejaVu Sans Mono", monospace, sans-serif;
+
+//
+// Colors
+//
+$link_color: blue;
+$visited_link_color: $link_color;
+$active_link_color: red;
+$main_text_color: #222;
+$header_text_color: #000;
+$selection_text_color: #fff;
+$selection_bg_color: #fe57a1;
+
+//
+// Partials to be shared with all .scss files.
+////////////////////////////////////////
+@import "compass";                  // See http://compass-style.org
+@import "compass/reset/utilities";
+@import "mixins";                   // Import our custom mixins last.

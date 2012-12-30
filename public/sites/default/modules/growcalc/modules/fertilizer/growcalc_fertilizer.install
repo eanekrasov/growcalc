@@ -33,13 +33,13 @@ function growcalc_fertilizer_install() {
   // Complete the node type definition by setting any defaults not explicitly
   // declared above.
   // http://api.drupal.org/api/function/node_type_set_defaults/7
-  $content_type = node_type_set_defaults($fertilizer_type);
+  $fertilizer_type = node_type_set_defaults($fertilizer_type);
 
   //We add a body field and set the body label immediately.
-  //node_add_body_field($content_type, $t('Description'));
+  //node_add_body_field($fertilizer_type, $t('Description'));
 
   // Save the content type
-  node_type_save($content_type);
+  node_type_save($fertilizer_type);
 
   drupal_flush_all_caches();
 
@@ -153,23 +153,23 @@ function growcalc_fertilizer_uninstall() {
   // Loop over each of the fields defined by this module and delete
   // all instances of the field, their data, and the field itself.
   // http://api.drupal.org/api/function/field_delete_field/7
-  foreach (array_keys(_growcalc_fertilizer_installed_fields()) as $field) {
-    field_delete_field($field);
-  }
+  //foreach (array_keys(_growcalc_fertilizer_installed_fields()) as $field) {
+    //field_delete_field($field);
+  //}
 
   // Loop over any remaining field instances attached to the element
   // content type (such as the body field) and delete them individually.
   // http://api.drupal.org/api/function/field_delete_field/7
-  $instances = field_info_instances('node', 'growcalc_fertilizer');
-  foreach ($instances as $instance_name => $instance) {
-    field_delete_instance($instance);
-  }
+  //$instances = field_info_instances('node', 'growcalc_fertilizer');
+  //foreach ($instances as $instance_name => $instance) {
+    //field_delete_instance($instance);
+  //}
 
   // Delete our content type
   // http://api.drupal.org/api/function/node_type_delete/7
-  node_type_delete('growcalc_fertilizer');
+  //node_type_delete('growcalc_fertilizer');
 
   // Purge all field infromation
   // http://api.drupal.org/api/function/field_purge_batch/7
-  field_purge_batch(1000);
+  //field_purge_batch(1000);
 }

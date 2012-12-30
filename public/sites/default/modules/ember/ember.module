@@ -32,7 +32,7 @@ function ember_libraries_info() {
       // relative to the library path.
       'js' => array(
         'handlebars-1.0.0.beta.6.js',
-        'ember-1.0.0-pre.2.min.js',
+        'ember-1.0.0-pre.2.js',
       ),
       'css' => array(
         //'lib_style.css',
@@ -50,7 +50,7 @@ function ember_libraries_info() {
         'files' => array(
           'js' => array(
             'handlebars-1.0.0.beta.6.js',
-            'ember-1.0.0-pre.2.min.js',
+            'ember-1.0.0-pre.2.js',
           ),
           'css' => array(
             //'lib_style.css',
@@ -74,7 +74,7 @@ function ember_libraries_info() {
     'versions' => array(
       '1' => array(
         'files' => array(
-          'js' => array('handlebars-1.0.0.beta.6.js', 'ember-1.0.0-pre.2.min.js'),
+          'js' => array('handlebars-1.0.0.beta.6.js', 'ember-1.0.0-pre.2.js'),
           //'css' => array('exlib_style.css'),
         ),
       ),

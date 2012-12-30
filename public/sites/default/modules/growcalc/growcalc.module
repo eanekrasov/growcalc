@@ -59,7 +59,9 @@ function growcalc_info_page() {
 }
 
 function growcalc_init() {
-  if ((arg(0) !== 'admin') && (arg(0) !== 'js') && (arg(0) !== 'system')) {
+  $attach = ((arg(0) !== 'system') && (arg(0) !== 'js') && (arg(0) !== 'admin') && (arg(0) !== 'field_collection'));
+  $attach = $attach && !((arg(0) == 'node') && ((arg(1) == 'add') || ((is_numeric(arg(1))) && (arg(2) == 'edit'))));
+  if ($attach) {
     if (($ember = libraries_load('ember')) && !empty($ember['loaded'])) {
       drupal_add_library('system', 'ui');
       drupal_add_library('system', 'ui.autocomplete');
@@ -72,20 +74,37 @@ function growcalc_init() {
       drupal_add_css('sites/all/libraries/pnotify/jquery.pnotify.default.css');
       drupal_add_css('sites/all/libraries/pnotify/jquery.pnotify.default.icons.css');
 
-      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/raphael-ext.js');
-      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/gceditor.js');
-      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/structures.js');
+      drupal_add_js('sites/all/libraries/jquery.ui.spinner-master/ui.spinner.js');
+      drupal_add_css('sites/all/libraries/jquery.ui.spinner-master/ui.spinner.css');
 
-      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.dimensions.js');
-      //drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.tooltip.min.js');
-      //drupal_add_css(drupal_get_path('module', 'growcalc') . '/css/jquery.tooltip.css');      
+      drupal_add_js('sites/all/libraries/hammer.js/hammer.js');
+      drupal_add_js('sites/all/libraries/hammer.js/jquery.hammer.js');
+
+
+      drupal_add_js('sites/all/libraries/farbtastic/farbtastic.js');
+      drupal_add_css('sites/all/libraries/farbtastic/farbtastic.css');
+
+      drupal_add_js('sites/all/libraries/d3.js/d3.js');
 
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/jquery.list-filter.js');
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/ember-jquery-ui-mixin.js');
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/JSON.js');
+      drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/libs/color.js');
 
       drupal_add_css(drupal_get_path('module', 'growcalc') . '/css/growcalc.css');
       drupal_add_js(drupal_get_path('module', 'growcalc') . '/js/growcalc.js');
     }
   }
+}
+
+function growcalc_entity_new($type) {
+  $entity = new stdClass();
+  $entity->type = $type;
+  $entity->status = 1;
+  $entity->language = 'und'; //language_default()->language;
+  $entity->created = time();
+  $entity->timestamp = time();
+  node_object_prepare($entity);
+
+  return $entity;
 }

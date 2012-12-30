@@ -1,20 +1,13 @@
 <?php
 
-
 function _growcalc_fertilizer_nutrition_data() {
-$data = array();
+  $data = array();
 
-  $fertilizer_nutritions = array();
+  $entities = array();
   foreach($data as &$data_item) {
-
-    $entity = entity_get_controller('growcalc_fertilizer_nutrition')->create();
-    $entity->type = 'growcalc_fertilizer_nutrition';
-    $entity->name = $data_item['name'];
-    $entity->description = $data_item['description'];
-    $entity->status = ($data_item['status'] == True);
-    growcalc_fertilizer_nutrition_save($entity);
-    $fertilizer_nutritions[$entity->name] = $entity;
+    $entity = growcalc_fertilizer_nutrition_update(growcalc_entity_new('growcalc_fertilizer_nutrition'), $data_item);
+    $entities[$entity->title] = $entity;
   }
 
-  return $fertilizer_nutritions;
+  return $entities;
 }

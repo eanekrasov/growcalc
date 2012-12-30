@@ -1,0 +1,112 @@
+.ui-dialog {
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+}
+
+.ui-dialog,
+.ui-dialog .fertilizer-editor-dialog,
+.ui-dialog .ui-dialog-buttonpane {
+	background: #f8f8f8;
+}
+
+
+.fertilizer-editor-dialog table tbody,
+.fertilizer-editor-dialog table tr,
+.fertilizer-editor-dialog table td {
+	border: none;
+	background: none;
+}
+
+
+/* .fertilizer-editor-dialog .new-element */
+.fertilizer-editor-dialog .new-element input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+.fertilizer-editor-dialog .new-element .action-addelement {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.fertilizer-editor-dialog .new-element .action-dropdown {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-radius: 0;
+  border-right: none;
+}
+
+.block-growcalc-fertilizer .content {
+	margin-top: 0;
+}
+
+#calc-fertilizers-filter {
+  width: 100%;
+  margin: 0;
+}
+
+.expanded #calc-fertilizers-filter {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+
+#calc-fertilizers {
+  box-shadow:1px 1px 3px #eee inset;
+  border: 1px solid #d3d3d3;
+  border-radius: 0 0 5px 5px;
+  background: #fff;
+  padding: 10px;
+  border-top: none;
+
+}
+
+.block-growcalc-fertilizer {
+  margin: 20px 0;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 1px 2px 3px -2px #000000;
+}
+
+
+.list-fertilizers {
+  padding: 0;
+}
+.list-fertilizers li {
+  position: relative;
+  list-style: none;
+  margin: 5px 0;
+  padding: 5px 0;
+  border-top: 1px solid #d3d3d3;
+}
+
+.list-fertilizers .action-edit {
+  position: absolute;
+  right: 0;
+  top: 0;
+  visibility: hidden;
+}
+
+.list-fertilizers li:hover .action-edit {
+  visibility: visible;
+}
+
+/* .fertilizer-editor-dialog .list-fertilizers */
+.fertilizer-editor-dialog .list-fertilizers input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+.fertilizer-editor-dialog .list-fertilizers .action-delete {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.fertilizer-editor-dialog .list-fertilizers .action-delete .ui-button-text {
+  padding: 4px;
+}

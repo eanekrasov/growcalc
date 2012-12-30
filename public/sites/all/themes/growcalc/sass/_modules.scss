@@ -1,0 +1,101 @@
+////////////////////////////////////////////////////////////////////////////////
+// Midule Styles
+// --------------------
+// This partial defines the styles for modules. Most custom
+// styling should go here.
+//
+// Styling of standard HTML elements (paragraphs, headers, lists, etc...) can
+// be found in _base.scss.
+//
+// Positioning of major page elements can be found in _layout.scss.
+////////////////////////////////////////////////////////////////////////////////
+
+#admin-menu li {
+  line-height: 1.4em !important;
+}
+
+body {
+  background: $body_bg;
+}
+
+#page {
+  background: $page_bg;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  box-shadow: 0 0 15px #000;
+}
+
+#header,
+#sidebar-first,
+#sidebar-second,
+#footer {
+  padding: 10px;
+}
+
+#header {
+  background: $header_bg;
+  position: relative;
+}
+
+#sidebar-first {
+  background: $sidebar_first_bg;
+}
+
+#sidebar-second {
+  background: $sidebar_second_bg;
+}
+
+#footer {
+  background: $footer_bg;
+}
+
+#content-inner {
+  padding: 0 15px;
+}
+
+
+.ember-text-field,
+.ember-number-field input,
+input.filter {
+  border-radius: 5px;
+  border: 1px solid #d3d3d3;
+
+  background: -moz-linear-gradient(top,  rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,1) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,0)), color-stop(50%,rgba(255,255,255,1)), color-stop(100%,rgba(255,255,255,1))); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00ffffff', endColorstr='#ffffff',GradientType=0 ); /* IE6-9 */
+
+  font-size: 14px/2em;
+  padding: 3px;
+  height: 26px;
+}
+
+.ember-number-field {
+  overflow: hidden;
+  vertical-align: bottom;
+  display: inline-block;
+  input {
+    width: 150px;
+  }
+}
+
+.ember-number-field input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ember-number-field.with-button {
+  .action {
+    border-right: none;
+    border-radius: 0;
+  }
+}
+
+#block-block-1 {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}

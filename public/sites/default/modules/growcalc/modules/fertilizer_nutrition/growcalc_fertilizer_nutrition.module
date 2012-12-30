@@ -10,143 +10,55 @@
  * Implement hook_init().
  */
 function growcalc_fertilizer_nutrition_init() {
-  if (arg(0) !== 'admin') {
+  $attach = ((arg(0) !== 'system') && (arg(0) !== 'js') && (arg(0) !== 'admin') && (arg(0) !== 'field_collection'));
+  $attach = $attach && !((arg(0) == 'node') && ((arg(1) == 'add') || ((is_numeric(arg(1))) && (arg(2) == 'edit'))));
+  if ($attach) {
+
+    drupal_add_library('system', 'ui.dialog');
 
     drupal_add_js(drupal_get_path('module', 'growcalc_fertilizer_nutrition') . '/js/growcalc_fertilizer_nutrition.js');
     drupal_add_css(drupal_get_path('module', 'growcalc_fertilizer_nutrition') . '/css/growcalc_fertilizer_nutrition.css');
 
     // fertilizer nutritions list
-    $growcalc_fertilizer_nutritions = growcalc_fertilizer_nutrition_load_multiple(FALSE, array()); // 'status' => 1
+    $query = new EntityFieldQuery();
+    $entities = $query->entityCondition('entity_type', 'node')         
+      ->propertyCondition('type', 'growcalc_fertilizer_nutrition')
+      ->execute();
+
     $data = array();
+    if (!empty($entities['node'])) {
+      $entities = node_load_multiple(array_keys($entities['node']));
+      foreach($entities as $entity) {
+        $entity_wrapper = entity_metadata_wrapper('node', $entity);
+        $data[$entity->title] = array(
+          'id' => $entity->nid,
+          'name' => $entity->title,
+          //'status' => $entity->status,
+          'fertilizers' => array(),
+          'elements' => array(),
+        );
 
-    foreach($growcalc_fertilizer_nutritions as $fertilizer_nutrition) {
-      $fertilizer_nutrition_wrapper = entity_metadata_wrapper('growcalc_fertilizer_nutrition', $fertilizer_nutrition);
-      $data[$fertilizer_nutrition->name] = array(
-        'id' => $fertilizer_nutrition->growcalc_fertilizer_nutrition_id,
-        'name' => $fertilizer_nutrition->name,
-        'description' => $fertilizer_nutrition->description,
-        'status' => $fertilizer_nutrition->status,
-      );
-
-      $fertilizers = array();
-      if ($fertilizer_nutrition_wrapper->growcalc_fertilizers->count() > 0) {
-        foreach($fertilizer_nutrition_wrapper->growcalc_fertilizers as $fertilizer_wrapper) {
-          $fertilizers[] = array(
-            'fertilizer' => $fertilizer_wrapper->growcalc_fertilizer->name->value(),
-            'amount' => $fertilizer_wrapper->amount->value()
-          );
+        if ($entity_wrapper->growcalc_fertilizers->count() > 0) {
+          foreach($entity_wrapper->growcalc_fertilizers as $fertilizer_wrapper) {
+            $data[$entity->title]['fertilizers'][] = array(
+              'fertilizer' => $fertilizer_wrapper->growcalc_fertilizer->title->value(),
+              'amount' => $fertilizer_wrapper->amount->value()
+            );
+          }
+        }
+        if ($entity_wrapper->growcalc_elements->count() > 0) {
+          foreach($entity_wrapper->growcalc_elements as $element_wrapper) {
+            if (($element_wrapper->amount->value() > 0) && ($element_wrapper->growcalc_element->value() != NULL)) {
+              $data[$entity->title]['elements'][] = array(
+                'element' => $element_wrapper->growcalc_element->title->value(),
+                'amount' => $element_wrapper->amount->value()
+              );
+            }
+          }
         }
       }
-      $data[$fertilizer_nutrition->name]['fertilizers'] = $fertilizers;
-
     }
-
     drupal_add_js(array('growcalc' => array('fertilizer_nutritions' => $data)), 'setting');
-
-  }
-
-}
-
-/**
- * Implement hook_entity_info().
- *
- * We define two entities here - the actual entity that will hold our domain
- * specific information and an entity that holds information about the different
- * types of entities. See here: http://drupal.org/node/977380 for a discussion on this
- * choice.
- */
-function growcalc_fertilizer_nutrition_entity_info() {
-  $return['growcalc_fertilizer_nutrition'] = array(
-    'label' => t('Growcalc Fertilizer Nutrition'),
-    // The entity class and controller class extend the classes provided by the
-    // Entity API
-    'entity class' => 'GrowcalcFertilizerNutrition',
-    'controller class' => 'GrowcalcFertilizerNutritionController',
-    'base table' => 'growcalc_fertilizer_nutrition',
-    'fieldable' => TRUE,
-    'entity keys' => array(
-        'id' => 'growcalc_fertilizer_nutrition_id',
-        'bundle' => 'type',
-    ),
-    // Bundles are defined by the growcalc_fertilizer_nutrition types below
-    'bundles' => array(),
-    // Bundle keys tell the FieldAPI how to extract information from the bundle objects
-    'bundle keys' => array(
-      'bundle' => 'type',
-    ),
-    'label callback' => 'entity_class_label',
-    'uri callback' => 'entity_class_uri',
-    'creation callback' => 'growcalc_fertilizer_nutrition_create',
-    'access callback' => 'growcalc_fertilizer_nutrition_access',
-    'module' => 'growcalc_fertilizer_nutrition',
-    // The information below is used by the GrowcalcFertilizerUIController (which extends the EntityDefaultUIController)
-    'admin ui' => array(
-      'path' => 'admin/content/growcalc/fertilizer_nutritions',
-      'file' => 'growcalc_fertilizer_nutrition.admin.inc',
-      'controller class' => 'GrowcalcFertilizerNutritionUIController',
-      'menu wildcard' => '%growcalc_fertilizer_nutrition',
-    ),
-  );
-  // The entity that holds information about the entity types	  
-  $return['growcalc_fertilizer_nutrition_type'] = array(
-    'label' => t('Growcalc Fertilizer Nutrition Type'),
-    'entity class' => 'GrowcalcFertilizerNutritionType',
-    'controller class' => 'GrowcalcFertilizerNutritionTypeController',
-    'base table' => 'growcalc_fertilizer_nutrition_type',
-    'fieldable' => FALSE,
-    'bundle of' => 'growcalc_fertilizer_nutrition',
-    'exportable' => TRUE,
-    'entity keys' => array(
-      'id' => 'id',
-      'name' => 'type',
-      'label' => 'label',
-    ),
-    'access callback' => 'growcalc_fertilizer_nutrition_type_access',
-    'module' => 'growcalc_fertilizer_nutrition',
-    // Enable the entity API's admin UI.
-    'admin ui' => array(
-      'path' => 'admin/structure/growcalc/fertilizer_nutrition_types',
-      'file' => 'growcalc_fertilizer_nutrition_type.admin.inc',
-      'controller class' => 'GrowcalcFertilizerNutritionTypeUIController',
-    ),
-  );
-
-  return $return;
-}
-
-/**
- * Basic information for the page.
- *
- * @todo: Give links to admin pages, etc.
- */
-function growcalc_fertilizer_nutrition_info_page() {
-  $content[] = array(
-    '#type' => 'item',
-    '#markup' => t('Nothing here'),
-  );
-
-  return $content;
-}
-
-/**
- * Implements hook_entity_info_alter().
- *
- * We are adding the info about the growcalc_fertilizer_nutrition types via a hook to avoid a recursion
- * issue as loading the growcalc_fertilizer_nutrition types requires the entity info as well.
- *
- * @todo This needs to be improved
- */
-function growcalc_fertilizer_nutrition_entity_info_alter(&$entity_info) {
-  foreach (growcalc_fertilizer_nutrition_get_types() as $type => $info) {
-    $entity_info['growcalc_fertilizer_nutrition']['bundles'][$type] = array(
-      'label' => $info->label,
-      'admin' => array(
-        'path' => 'admin/structure/growcalc/fertilizer_nutrition_types/manage/%growcalc_fertilizer_nutrition_type',
-        'real path' => 'admin/structure/growcalc/fertilizer_nutrition_types/manage/' . $type,
-        'bundle argument' => 5,
-        'access arguments' => array('administer growcalc fertilizer types'),
-      ),
-    );
   }
 }
   
@@ -154,22 +66,28 @@ function growcalc_fertilizer_nutrition_entity_info_alter(&$entity_info) {
  * Implements hook_menu()
  */
 function growcalc_fertilizer_nutrition_menu() {
-  $items['growcalc/fertilizer_nutrition'] = array(
-    'title' => 'GrowCalc fertilizer nutritions',
-    'page callback' => 'growcalc_fertilizer_nutrition_info_page',
-    'access callback' => TRUE,
+  $items['growcalc/ajax/fertilizer_nutrition/create'] = array(
+    'page callback' => 'growcalc_fertilizer_nutrition_ajax_create',
+    'page arguments' => array(),
+    'access arguments' => array('administer growcalc fertilizer nutritions'),
   );
 
-  $items['growcalc/fertilizer_nutrition/%growcalc_fertilizer_nutrition/ajax/update'] = array(
+  $items['growcalc/ajax/fertilizer_nutrition/%node/update'] = array(
     'page callback' => 'growcalc_fertilizer_nutrition_ajax_update',
-    'page arguments' => array(2),
+    'page arguments' => array(3),
+    'access arguments' => array('administer growcalc fertilizer nutritions'),
+  );
+
+  $items['growcalc/ajax/fertilizer_nutrition/%node/delete'] = array(
+    'page callback' => 'growcalc_fertilizer_nutrition_ajax_delete',
+    'page arguments' => array(3),
     'access arguments' => array('administer growcalc fertilizer nutritions'),
   );
 
   $items['admin/config/growcalc/fertilizer_nutrition'] = array(
-    'title' => 'GrowCalc fertilizer nutrition',
-    'description' => 'Configure GrowCalc fertilizer nutrition.',
-    'access arguments' => array('administer growcalc fertilizer nutrition'),
+    'title' => 'Fertilizer nutrition',
+    'description' => 'Configure fertilizer nutrition.',
+    'access arguments' => array('administer growcalc fertilizer nutrition module'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('growcalc_fertilizer_nutrition_settings'),
     'file' => 'growcalc_fertilizer_nutrition.admin.inc'
@@ -178,65 +96,99 @@ function growcalc_fertilizer_nutrition_menu() {
   return $items;
 }
 
-function growcalc_fertilizer_nutrition_ajax_update($fertilizer_nutrition) {
-  //$fertilizer_nutrition_wrapper = entity_metadata_wrapper('growcalc_fertilizer', $fertilizer_nutrition);
-
-  $fertilizer_nutrition->description = check_plain($_POST['Description']);
-
-  // Добавление отсутствующих удобрений, обновление существующих
-  foreach($_POST['Fertilizers'] as $Fertilizer) {
+function _growcalc_fertilizer_nutrition_process_field(&$entity, $type, $field, $values, $valueKey, $valueValue) {
+    // Добавление отсутствующих элементов, обновление существующих
+  foreach($values as $item) {
     $contains = false;
 
-    foreach($fertilizer_nutrition->growcalc_fertilizers['und'] as $fertilizer) {
-      $fertilizer = entity_metadata_wrapper('field_collection_item', $fertilizer['value']);
-
-      if ($fertilizer->growcalc_fertilizer->name->value() == $Fertilizer['Fertilizer']) {
-        $contains = true;
-
-        $fertilizer->amount->set($Fertilizer['Amount']);
-        $fertilizer->save();
-        break;
+    if (field_get_items('node', $entity, $field) != false) {
+      foreach(field_get_items('node', $entity, $field) as $entity_item) {
+        $item_wrapper = entity_metadata_wrapper('field_collection_item', $entity_item['value']);
+        if ($item_wrapper->{$type}->title->value() == $item[$valueKey]) {
+          $contains = true;
+          $item_wrapper->{$valueValue}->set($item[$valueValue]);
+          $item_wrapper->save();
+          break;
+        }
       }
     }
 
     if (!$contains) {
-      $ref = growcalc_fertilizer_load_multiple(FALSE, array('name' => $Fertilizer['Fertilizer']));
+      $ref = node_load_multiple(array(), array('title' => $item[$valueKey], 'type' => $type));
       $ref = reset($ref);
-      $newFertilizer = entity_create('field_collection_item', array(
-          'field_name'           => 'growcalc_fertilizers',
-          'amount'            => array(LANGUAGE_NONE => array(0 => array('value' => $Fertilizer['Amount']))),
-          'growcalc_fertilizer' => array(LANGUAGE_NONE => array(0 => array('target_id' => $ref->growcalc_fertilizer_id))),
+      $newItem = entity_create('field_collection_item', array(
+          'field_name'           => $field,
+          $valueValue            => array(LANGUAGE_NONE => array(0 => array('value' => $item[$valueValue]))),
+          $type                  => array(LANGUAGE_NONE => array(0 => array('target_id' => $ref->nid, 'target_type' => 'node'))),
       ));
-      $newFertilizer->setHostEntity('growcalc_fertilizer_nutrition', $fertilizer_nutrition);
-      $newFertilizer->save();
+      $newItem->setHostEntity('node', $entity);
+      $newItem->save();
     }
   }
 
   // Удаление элементов
-  foreach($fertilizer->growcalc_fertilizers['und'] as $fertilizer_id) {
-    $contains = false;
-    $fertilizer = entity_metadata_wrapper('field_collection_item', $fertilizer_id['value']);
-    $fertilizerName = $fertilizer->growcalc_fertilizer->name->value();
-
-    foreach($_POST['Fertilizers'] as $Fertilizer) {
-      if ($fertilizerName == $Fertilizer['Fertilizer']) {
-        $contains = true;
-      }
-    }
-
-    if (!$contains) {
-      foreach($fertilizer_nutrition->growcalc_fertilizers['und'] as $k=>$v) {
-        if ($v['value'] == $ion->item_id->value()) {
-          unset($fertilizer_nutrition->growcalc_fertilizers['und'][$k]);
-          break;
+  if (field_get_items('node', $entity, $field) != false) {
+    foreach(field_get_items('node', $entity, $field) as $entity_item) {
+      $contains = false;
+      $item_wrapper = entity_metadata_wrapper('field_collection_item', $entity_item['value']);
+      foreach($values as $item) {
+        if ($item_wrapper->{$type}->title->value() == $item[$valueKey]) {
+          $contains = true;
         }
       }
-      $fertilizer->delete();
+      if (!$contains) {
+        foreach(field_get_items('node', $entity, $field) as $k=>$v) {
+          if ($v['value'] == $item_wrapper->item_id->value()) {
+            unset($entity->{$field}['und'][$k]);
+            break;
+          }
+        }
+      }
     }
   }
+}
 
-  $fertilizer_nutrition->save();
+function growcalc_fertilizer_nutrition_update($entity, $values) {
+  $entity->title = $values['name'];
 
+  _growcalc_fertilizer_nutrition_process_field($entity, 'growcalc_fertilizer', 'growcalc_fertilizers', $values['fertilizers'], 'fertilizer', 'amount');
+  
+  _growcalc_fertilizer_nutrition_process_field($entity, 'growcalc_element', 'growcalc_elements', $values['elements'], 'element', 'amount');
+  
+  node_submit($entity);
+  node_save($entity);
+  
+  return $entity;  
+}
+
+function growcalc_fertilizer_nutrition_ajax_create($type) {
+  $entity = growcalc_fertilizer_nutrition_update(growcalc_entity_new('growcalc_fertilizer_nutrition'), array(
+    'name' => check_plain($_POST['name']),
+    //'status' => check_plain($_POST['status']),
+    'fertilizers' => $_POST['fertilizers'],
+    'elements' => $_POST['elements'],
+  ));
+
+  if ($entity->nid) {
+    print drupal_json_output(array('success' => true, 'id' => $entity->nid));
+  } else {
+    // throw new ajax error.
+  }
+}
+
+function growcalc_fertilizer_nutrition_ajax_update($entity) {
+  $entity = growcalc_fertilizer_nutrition_update($entity, array(
+    'name' => check_plain($_POST['name']),
+    //'status' => check_plain($_POST['status']),
+    'fertilizers' => $_POST['fertilizers'],
+    'elements' => $_POST['elements'],
+  ));
+
+  print drupal_json_output(array('success' => true));
+}
+
+function growcalc_fertilizer_nutrition_ajax_delete($entity) {
+  node_delete($entity->nid);
   print drupal_json_output(array('success' => true));
 }
 
@@ -247,226 +199,18 @@ function growcalc_fertilizer_nutrition_permission() {
   // We set up permisssions to manage entity types, manage all entities and the
   // permissions for each individual entity
   $permissions = array(
-    'administer growcalc fertilizer nutrition types' => array(
-      'title' => t('Administer growcalc fertilizer nutrition types'),
-      'description' => t('Create and delete fields for fertilizer nutrition types, and set their permissions.'),
-    ),
     'administer growcalc fertilizer nutritions' => array(
       'title' => t('Administer fertilizer nutritions'),
       'description' => t('Edit and delete all fertilizer nutritions'),
     ),  
+    'administer growcalc fertilizer nutrition module' => array(
+      'title' => t('Administer fertilizer nutrition module'),
+      'description' => t('Change module settings'),
+    ),  
   );
   
-  //Generate permissions per growcalc_fertilizer_nutrition 
-  foreach (growcalc_fertilizer_nutrition_get_types() as $type) {
-    $type_name = check_plain($type->type);
-    $permissions += array(
-      "edit any $type_name growcalc fertilizer nutrition" => array(
-        'title' => t('%type_name: Edit any fertilizer nutrition', array('%type_name' => $type->label)),
-      ),
-      "view any $type_name growcalc fertilizer nutrition" => array(
-        'title' => t('%type_name: View any fertilizer nutrition', array('%type_name' => $type->label)),
-      ),
-    );
-  }
   return $permissions;  
 }
-
-
-/**
- * Determines whether the given user has access to a fertilizer nutrition.
- *
- * @param $op
- *   The operation being performed. One of 'view', 'update', 'create', 'delete'
- *   or just 'edit' (being the same as 'create' or 'update').
- * @param $growcalc_fertilizer_nutrition
- *   Optionally a fertilizer nutrition or a fertilizer nutrition type to check access for. If nothing is
- *   given, access for all growcalc_fertilizer_nutritions is determined.
- * @param $account
- *   The user to check for. Leave it to NULL to check for the global user.
- * @return boolean
- *   Whether access is allowed or not.
- */
-function growcalc_fertilizer_nutrition_access($op, $growcalc_fertilizer_nutrition = NULL, $account = NULL) {
-  if (user_access('administer growcalc fertilizer nutritions', $account)) {
-    return TRUE;
-  }
-  if (isset($growcalc_fertilizer_nutrition) && $type_name = $growcalc_fertilizer_nutrition->type) {
-    $op = ($op == 'view') ? 'view' : 'edit';
-    if (user_access("$op any $type_name growcalc fertilizer nutrition", $account)) {
-      return TRUE;
-    }
-  }
-  return FALSE;
-}
-
-
-/**
- * Access callback for the entity API.
- */
-function growcalc_fertilizer_nutrition_type_access($op, $type = NULL, $account = NULL) {
-  return user_access('administer growcalc fertilizer nutrition types', $account);
-}
-
-
-/**
- * Gets an array of all fertilizer nutrition types, keyed by the type name.
- *
- * @param $type_name
- *   If set, the type with the given name is returned.
- * @return GrowcalcFertilizerNutritionType[]
- *   Depending whether $type isset, an array of fertilizer nutrition types or a single one.
- */
-function growcalc_fertilizer_nutrition_get_types($type_name = NULL) {
-  // entity_load will get the Entity controller for our growcalc_fertilizer entity and call the load
-  // function of that object - we are loading entities by name here.
-  $types = entity_load_multiple_by_name('growcalc_fertilizer_nutrition_type', isset($type_name) ? array($type_name) : FALSE);
-  return isset($type_name) ? reset($types) : $types;
-}
-
-
-/**
- * Menu argument loader; Load a growcalc_fertilizer_nutrition type by string.
- *
- * @param $type
- *   The machine-readable name of a growcalc_fertilizer_nutrition type to load.
- * @return
- *   A growcalc_fertilizer type array or FALSE if $type does not exist.
- */
-function growcalc_fertilizer_nutrition_type_load($type) {
-  return growcalc_fertilizer_nutrition_get_types($type);
-}
-
-
-/**
- * Fetch a growcalc_fertilizer_nutrition object. Make sure that the wildcard you choose 
- * in the growcalc_fertilizer_nutrition entity definition fits the function name here.
- *
- * @param $growcalc_fertilizer_nutrition_id
- *   Integer specifying the growcalc_fertilizer_nutrition id.
- * @param $reset
- *   A boolean indicating that the internal cache should be reset.
- * @return
- *   A fully-loaded $growcalc_fertilizer_nutrition object or FALSE if it cannot be loaded.
- *
- * @see growcalc_fertilizer_nutrition_load_multiple()
- */
-function growcalc_fertilizer_nutrition_load($fertilizer_nutrition_id, $reset = FALSE) {
-  $growcalc_fertilizer_nutritions = growcalc_fertilizer_nutrition_load_multiple(array($fertilizer_nutrition_id), array(), $reset);
-  return reset($growcalc_fertilizer_nutritions);
-}
-
-
-/**
- * Load multiple growcalc_fertilizer_nutritions based on certain conditions.
- *
- * @param $growcalc_fertilizer_nutrition_ids
- *   An array of growcalc_fertilizer_nutrition IDs.
- * @param $conditions
- *   An array of conditions to match against the {growcalc_fertilizer_nutrition} table.
- * @param $reset
- *   A boolean indicating that the internal cache should be reset.
- * @return
- *   An array of growcalc_fertilizer_nutrition objects, indexed by growcalc_fertilizer_nutrition_id.
- *
- * @see entity_load()
- * @see growcalc_fertilizer_nutrition_load()
- */
-function growcalc_fertilizer_nutrition_load_multiple($growcalc_fertilizer_nutrition_ids = array(), $conditions = array(), $reset = FALSE) {
-  return entity_load('growcalc_fertilizer_nutrition', $growcalc_fertilizer_nutrition_ids, $conditions, $reset);
-}
-
-
-/**
- * Deletes a growcalc_fertilizer_nutrition.
- */
-function growcalc_fertilizer_nutrition_delete(GrowcalcFertilizerNutrition $growcalc_fertilizer_nutrition) {
-  $growcalc_fertilizer_nutrition->delete();
-}
-
-
-/**
- * Delete multiple growcalc_fertilizer_nutritions.
- *
- * @param $growcalc_fertilizer_nutrition_ids
- *   An array of growcalc_fertilizer_nutrition IDs.
- */
-function growcalc_fertilizer_nutrition_delete_multiple(array $growcalc_fertilizer_nutrition_ids) {
-  entity_get_controller('growcalc_fertilizer_nutrition')->delete($growcalc_fertilizer_nutrition_ids);
-}
-
-
-/**
- * Create a growcalc_fertilizer_nutrition object.
- */
-function growcalc_fertilizer_nutrition_create($values = array()) {
-  return entity_get_controller('growcalc_fertilizer_nutrition')->create($values);
-}
-
-/**
- * Create a growcalc_fertilizer_nutrition_type object.
- */
-function growcalc_fertilizer_nutrition_type_create($values = array()) {
-  return entity_get_controller('growcalc_fertilizer_nutrition_type')->create($values);
-}
-
-
-/**
- * Saves a growcalc_fertilizer_nutrition to the database.
- *
- * @param $growcalc_fertilizer_nutrition
- *   The growcalc_fertilizer_nutrition object.
- */
-function growcalc_fertilizer_nutrition_save(GrowcalcFertilizerNutrition $growcalc_fertilizer_nutrition) {
-  return $growcalc_fertilizer_nutrition->save();
-}
-
-
-/**
- * Saves a growcalc_fertilizer_nutrition type to the db.
- */
-function growcalc_fertilizer_nutrition_type_save(GrowcalcFertilizerNutritionType $type) {
-  $type->save();
-}
-
-
-/**
- * Deletes a growcalc_fertilizer_nutrition type from the db.
- */
-function growcalc_fertilizer_nutrition_type_delete(GrowcalcFertilizerNutritionType $type) {
-  $type->delete();
-}
-
-
-/**
- * URI callback for growcalc_fertilizer_nutritions
- */
-function growcalc_fertilizer_nutrition_uri(GrowcalcFertilizerNutrition $growcalc_fertilizer_nutrition){
-  return array(
-    'path' => 'growcalc/fertilizer_nutrition/' . $growcalc_fertilizer_nutrition->growcalc_fertilizer_nutrition_id,
-  );
-}
-
-
-/**
- * Menu title callback for showing individual entities
- */
-function growcalc_fertilizer_nutrition_page_title(GrowcalcFertilizerNutrition $growcalc_fertilizer_nutrition){
-  return $growcalc_fertilizer_nutrition->name;
-}
-
-
-/**
- * Sets up content to show an individual growcalc_fertilizer_nutrition
- * @todo - get rid of drupal_set_title();
- */
-function growcalc_fertilizer_nutrition_page_view($growcalc_fertilizer_nutrition, $view_mode = 'full') {    
-  $controller = entity_get_controller('growcalc_fertilizer_nutrition');  
-  $content = $controller->view(array($growcalc_fertilizer_nutrition->growcalc_fertilizer_nutrition_id => $growcalc_fertilizer_nutrition));
-  drupal_set_title($growcalc_fertilizer_nutrition->name);
-  return $content;
-}
-
 
 /**
  * Implements hook_views_api().
@@ -479,154 +223,23 @@ function growcalc_fertilizer_nutrition_views_api() {
 }
 
 
-/**
- * Implement hook_theme().
- */
-function growcalc_fertilizer_nutrition_theme() {
-  return array(
-    'growcalc_fertilizer_nutrition_add_list' => array(
-      'variables' => array('content' => array()),
-      'file' => 'growcalc_fertilizer_nutrition.admin.inc',
-    ),
-    'growcalc_fertilizer_nutrition' => array(
-      'render fertilizer' => 'fertilizer_nutritions',
-      'template' => 'growcalc-fertilizer-nutrition',
+function growcalc_fertilizer_nutrition_preprocess_node(&$vars) {
+  if ($vars['type'] == ' growcalc_fertilizer_nutrition') {
+    $vars['theme_hook_suggestions'][] = 'node__growcalc_fertilizer_nutrition';
+  }
+}
+
+function growcalc_fertilizer_nutrition_theme($existing, $type, $theme, $path) {
+  $items = array(
+    'node__growcalc_fertilizer_nutrition' => array(
+      // Don't specify the path in the template name.
+      // Unless you have your template inside a directory within this module.
+      'template' =>  'node--growcalc-fertilizer-nutrition',
+      'variables' => array('node' => (object)array()),
+      // If you want to put the tpl in another location, you can use this key.
+      'theme path' => drupal_get_path('module', 'growcalc_fertilizer_nutrition'),
     ),
   );
-}  
 
-
-/**
- * Implements hook_menu_local_tasks_alter().
- */
-function growcalc_fertilizer_nutrition_menu_local_tasks_alter(&$data, $router_item, $root_path) {
-  // Add action link 'admin/structure/growcalc/fertilizer_nutritions/add' on 'admin/structure/growcalc/fertilizer_nutritions'.
-  if ($root_path == 'admin/content/growcalc/fertilizer_nutritions') {
-    $item = menu_get_item('admin/content/growcalc/fertilizer_nutritions/add');
-    if ($item['access']) {
-      $data['actions']['output'][] = array(
-        '#theme' => 'menu_local_action',
-        '#link' => $item,
-      );
-    }
-  }
-}
-
-
-/**
- * The class used for growcalc_fertilizer entities
- */
-class GrowcalcFertilizerNutrition extends Entity {
-  
-  public function __construct($values = array()) {
-    parent::__construct($values, 'growcalc_fertilizer_nutrition');
-  }
-
-  protected function defaultLabel() {
-    return $this->name;
-  }
-
-  protected function defaultUri() {
-    return array('path' => 'growcalc/fertilizer_nutrition/' . $this->growcalc_fertilizer_nutrition_id);
-  }
-  
-  
-}
-
-
-/**
- * The class used for growcalc_fertilizer_nutrition type entities
- */
-class GrowcalcFertilizerNutritionType extends Entity {
-  
-  public $type;
-  public $label;
-  
-  public function __construct($values = array()) {
-    parent::__construct($values, 'growcalc_fertilizer_nutrition_type');
-  }
-  
-}
-
-
-/**
- * The Controller for growcalc_fertilizer_nutrition entities
- */
-class GrowcalcFertilizerNutritionController extends EntityAPIController {
-  public function __construct($entityType) {
-    parent::__construct($entityType);
-  }
-
-
-  /**
-   * Create a growcalc_fertilizer_nutrition - we first set up the values that are specific
-   * to our growcalc_fertilizer_nutrition schema but then also go through the EntityAPIController
-   * function.
-   * 
-   * @param $type
-   *   The machine-readable type of the growcalc_fertilizer_nutrition.
-   *
-   * @return
-   *   A growcalc_fertilizer_nutrition object with all default fields initialized.
-   */
-  public function create(array $values = array()) {
-    // Add values that are specific to our GrowcalcFertilizerNutrition
-    $values += array( 
-      'growcalc_fertilizer_nutrition_id' => '',
-      'is_new' => TRUE,
-      'type' => 'growcalc_fertilizer_nutrition',
-      'name' => '',
-      'status' => '',
-      'created' => '',
-      'changed' => '',
-      'data' => '',
-    );
-    
-    $growcalc_fertilizer_nutrition = parent::create($values);
-    return $growcalc_fertilizer_nutrition;
-  }
-  
-  /**
-   * Overriding the buldContent function to add entity specific fields
-   */
-  public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
-    $content = parent::buildContent($entity, $view_mode, $langcode, $content);
-    /*$content['sample_data'] =  array(
-      '#markup' => 'asd',
-    );*/
-    return $content;
-  }
-  
-}
-
-
-/**
- * The Controller for GrowcalcFertilizerNutrition entities
- */
-class GrowcalcFertilizerNutritionTypeController extends EntityAPIControllerExportable {
-  public function __construct($entityType) {
-    parent::__construct($entityType);
-  }
-  
-   /**
-   * Create a growcalc_fertilizer_nutrition type - we first set up the values that are specific
-   * to our growcalc_fertilizer_nutrition type schema but then also go through the EntityAPIController
-   * function.
-   * 
-   * @param $type
-   *   The machine-readable type of the growcalc_fertilizer_nutrition.
-   *
-   * @return
-   *   A growcalc_fertilizer_nutrition type object with all default fields initialized.
-   */
-  public function create(array $values = array()) {
-    // Add values that are specific to our growcalc_fertilizer_nutrition
-    $values += array( 
-      'id' => '',
-      'is_new' => TRUE,
-      'data' => '',
-    );
-    $growcalc_fertilizer_nutrition_type = parent::create($values);
-    return $growcalc_fertilizer_nutrition_type;
-  }
+  return $items;
 }

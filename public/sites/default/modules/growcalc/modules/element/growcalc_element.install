@@ -31,13 +31,13 @@ function growcalc_element_install() {
   // Complete the node type definition by setting any defaults not explicitly
   // declared above.
   // http://api.drupal.org/api/function/node_type_set_defaults/7
-  $content_type = node_type_set_defaults($element_type);
+  $element_type = node_type_set_defaults($element_type);
 
   //We add a body field and set the body label immediately.
   //node_add_body_field($content_type, $t('Description'));
 
   // Save the content type
-  node_type_save($content_type);
+  node_type_save($element_type);
 
   drupal_flush_all_caches();
 

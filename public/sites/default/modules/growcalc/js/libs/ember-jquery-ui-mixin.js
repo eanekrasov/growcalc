@@ -119,12 +119,18 @@
   JQ.AutoComplete = Ember.TextField.extend(JQ.Widget, {
     uiType: 'autocomplete',
     uiOptions: ['disabled', 'autoFocus', 'delay', 'minLength', 'position', 'source'],
-    uiEvents: ['select']
+    uiEvents: ['select'],
+    Search: function (value) {
+      this.get('ui').autocomplete('search', value);
+    },
+    Close: function () {
+      this.get('ui').autocomplete('close');
+    },
   });
   
   JQ.Dialog = Ember.View.extend(JQ.Widget, {
     uiType: 'dialog',
-    uiOptions: ['autoOpen', 'height', 'width', 'buttons', 'open', 'close'],
+    uiOptions: ['autoOpen', 'height', 'width', 'minHeight', 'minWidth', 'buttons', 'open', 'close'],
     attributeBindings: ['title'],
     title: "",
     autoOpen: false,
@@ -170,6 +176,28 @@
     willDestroyElement: function () {
       this._super();
     }
+  });
+
+  JQ.Spinner = Ember.TextField.extend(JQ.Widget, {
+    uiType: 'spinner',
+    uiOptions: ['min', 'max', 'page', 'step'],
+    uiEvents: ['change'],
+  });
+
+  JQ.Farbtastic = Ember.View.extend(JQ.Widget, {
+    uiType: 'farbtastic',
+    uiOptions: [],
+    uiEvents: ['callback'],
+    attributeBindings: ['value'],
+    classNames: ['farbtastic'],
+    value: '#00000',
+    didInsertElement: function () {
+      this._super();
+      this.get('ui').setColor('#' + this.get('value'));
+    },
+    callback: function (value) {
+      this.set('value', value.substr(-6));
+    },
   });
 
 })(window, window.document);

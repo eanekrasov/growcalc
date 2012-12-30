@@ -34,19 +34,24 @@
         }
       }
 
-      // apply removed elements
-      defaults.Elements.forEach(function (defaultElement, defaultsIndex, defaultElementsEnumerable) {
-        if (that.get('Elements').find(function (element, elementsIndex, elementsEnumerable) { return element.Element === defaultElement.Element; }) === null) {
-          delete defaults.Elements[i];
+      // clean removed elements
+      defaults.Elements.forEach(function (el) {
+        if (undefined == that.get('Elements').findProperty('Element', el.Element)) {
+          defaults.Elements.removeObject(el);
         }
       });
 
-      that.SaveTemporaryElements();
 
-      that.get('Elements').forEach(function (element, index, enumerable) {
-        var defaultElement = defaults.Elements.find(function (defaultElement, defaultsIndex, defaultsEnumerable) { return element.Element === defaultElement.Element; });
-        if (defaultElement !== null) {
-          defaultElement.set('Amount', element.get('Amount'));
+      that.get('Elements').forEach(function (el) {
+        i = defaults.Elements.findProperty('Element', el.Element);
+        if (i != undefined) {
+          i.set('Amount', el.get('Amount'));
+        }
+      });
+
+      that.get('Elements').forEach(function (el) {
+        if (undefined == defaults.Elements.findProperty('Element', el.get('Element'))) {
+          that.SetElementPermanent(el);
         }
       });
     },
@@ -101,15 +106,13 @@
       }
 
 
-      if (!isChanged) {
-        if ((that.get('Elements').length !== defaults.Elements.length) || (null !== defaults.Elements.find(function (defaultElement, defaultsIndex, defaultElementsEnumerable) {
-            return (null !== that.get('Elements').find(function (element, elementsIndex, elementsEnumerable) {
-              return (element.get('Element') === defaultElement.get('Element')) && (element.get('Amount') !== defaultElement.get('Amount'));
-            }));
-          }))) {
-          isChanged = true;
-        }
-      }
+      isChanged = isChanged
+        || (that.get('Elements').length !== defaults.Elements.length)
+        || (undefined != defaults.Elements.find(function (el) {
+          return !that.get('Elements')
+            .filterProperty('Element', el.get('Element'))
+            .everyProperty('Amount', el.get('Amount'));
+        }));
 
       return isChanged;
     },
@@ -185,22 +188,23 @@
         }
       }
 
-      this.RemoveTemporaryElements();
-
-      defaults.Elements.forEach(function (defaultElement, defaultsIndex, defaultsEnumerable) {
-        if (null === that.get('Elements').find(function (element, elementsIndex, elementsEnumerable) {
-          return (element.get('Element') === defaultElement.get('Element'));
-        })) {
-          that.AddElement(defaultElement.Element, defaultElement.Amount);
+      this.get('Elements').forEach(function (el) {
+        if (undefined == defaults.Elements.findProperty('Element', el.get('Element'))) {
+          that.RemoveElement(el.Element, true);
         }
       });
 
-      defaults.Elements.forEach(function (defaultElement, defaultsIndex, defaultsEnumerable) {
-        that.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
-          if (element.get('Element') === defaultElement.get('Element')) {
-            element.set('Amount', defaultElement.get('Amount'));  
-          }
-        });
+      defaults.Elements.forEach(function (el) {
+        i = that.get('Elements').findProperty('Element', el.get('Element'));
+        if (i != undefined) {
+          i.set('Amount', el.get('Amount'));
+        }
+      });
+
+      defaults.Elements.forEach(function (el) {
+        if (undefined == that.get('Elements').findProperty('Element', el.get('Element'))) {
+          that.AddElement(el.Element, el.Amount);
+        }
       });
     },
     /**
@@ -254,50 +258,29 @@
     AddElement: function (Element, Amount, temporary) {
       temporary = temporary || false;
       var element = Ember.Object.create({'Element': Element, 'Amount': parseFloat(Amount), 'Host': this});
-      element.view = GrowCalc.FertilizerElementView.create({ content: element });
-      if (this.hasOwnProperty('editorView')) {
-        this.editorView.get('FertilizerElementsView').get('childViews').pushObject(element.view);
-      }
+
       this.get('Elements').pushObject(element);
+
       if (!temporary) {
         this.SetElementPermanent(element);
       }
     },
-    RemoveElement: function (Element, temporary = false) {
+    RemoveElement: function (Element, temporary) {
+      temporary = temporary || false;
       var defaults = this.get('_defaults'),
-        element = this.get('Elements').find(function (element, elementsIndex, elementsEnumerable) {
-          return (element.get('Element') === Element);
-        });
-      if (element !== null) {
-        if (this.hasOwnProperty('editorView')) {
-          this.editorView.get('FertilizerElementsView').get('childViews').removeObject(element.view);
-        }
+        element = this.get('Elements').findProperty('Element', Element);
+      if (element != undefined) {
         this.get('Elements').removeObject(element);
         if (!temporary) {
           this.SetElementTemporary(element); // deletes element from defaults.
         }
-
-        element.view.destroy();
         element.destroy();
       }
-    },
-    RemoveTemporaryElements: function () {
-      var that = this,
-        defaults = this.get('_defaults');
-      this.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
-        if (null === defaults.Elements.find(function (defaultElement, defaultsIndex, defaultsEnumerable) {
-          return (element.get('Element') === defaultElement.get('Element'));
-        })) {
-          that.RemoveElement(element.Element, true);
-        }
-      });
     },
     SetElementPermanent: function(element) {
       var that = this,
         defaults = that.get('_defaults');
-      if (null === defaults.Elements.find(function (defaultElement, defaultsIndex, defaultsEnumerable) {
-        return (element.get('Element') === defaultElement.get('Element'));
-      })) {
+      if (undefined == defaults.Elements.findProperty('Element', element.get('Element'))) {
         defaults.Elements.pushObject(Ember.Object.create({
           'Element': element.Element, 
           'Amount': element.Amount,
@@ -307,58 +290,36 @@
     SetElementTemporary: function(element) {
       var that = this,
         defaults = that.get('_defaults'),
-        defaultElement = defaults.Ions.find(function (defaultElement, defaultsIndex, defaultsEnumerable) {
-          return (element.get('Element') === defaultElement.get('Element'));
-        });
-      if (null !== defaultElement) {
+        defaultElement = defaults.Ions.findProperty('Element', element.get('Element'));
+      if (undefined != defaultElement) {
         defaults.Elements.removeObject(defaultElement);
         defaultElement.destroy();
       }
     },
-    SaveTemporaryElements: function () {
-      var that = this,
-        defaults = this.get('_defaults');
-      that.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
-        if (null === defaults.Elements.find(function (defaultElement, defaultsIndex, defaultsEnumerable) {
-          return (element.get('Element') === defaultElement.get('Element'));
-        })) {
-          that.SetElementPermanent(element);
-        }
-      });
-    },
     ListElements: function () {
-      var totalElements = {};
+      var elements = [];
 
-      this.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
-        var list = element.get('Element').ListElements();
-        for(var i in list) {
-          if (list.hasOwnProperty(i)) {
-            if (typeof totalElements[list[i].get('Element').get('Symbol')] !== 'undefined') {
-              totalElements[list[i].get('Element').get('Symbol')].set('Amount', totalElements[list[i].get('Element').get('Symbol')].get('Amount') + element.get('Amount') * list[i].get('Amount'));
-            } else {
-              totalElements[list[i].get('Element').get('Symbol')] = {
-                Element: list[i].get('Element'),
-                Amount: element.get('Amount') * list[i].get('Amount'),
-              };
-            }
+      this.get('Elements').forEach(function (element) {
+        element.get('Element').ListElements().forEach(function (el_key) {
+          var el = elements.findProperty('Element', el_key.Element);
+          if (el) {
+            el.Amount += element.get('Amount') * el_key.Amount;
+          } else {
+            elements.pushObject({
+              Element: el_key.Element,
+              Amount: parseFloat(element.get('Amount')) * el_key.Amount * el_key.Element.get('MolarMass') / element.get('Element.MolarMass'),
+            });
           }
-        }
+        });
       });
 
-      if (this.get('Elements').length === 0) {
-        totalElements[this.Symbol] = {
-          Element: this,
-          Amount: 1,
-        };
-      }
-
-      return totalElements;
+      return elements;
     }
   });
 
   GrowCalc.FertilizersView = Ember.CollectionView.extend({
     tagName: 'ul',
-    classNames: ['nav', 'nav-list', 'nav-fertilizers'],
+    classNames: ['list', 'list-fertilizers'],
     contentBinding: 'GrowCalc.Fertilizers',
     itemViewClass: Ember.View.extend({
       tagName: 'li',
@@ -366,7 +327,7 @@
       contextBinding: 'content',
       template: Ember.Handlebars.compile(
         '{{Name}} {{Description}} {{Tag}}' +
-        '<button class="action action-edit" {{action "ShowEditorForm" target on="click"}} title="Редактирование"><span class="ui-icon ui-icon-wrench"></span></button>'
+        '<button class="btn btn-mini action action-edit" {{action "ShowEditorForm" target on="click"}} title="Редактирование"><i class="icon-edit"></i></button>'
       ),
       doubleClick: function () {
         this.content.ShowEditorForm(); 
@@ -374,37 +335,94 @@
       ShowEditorForm: function () {
         this.content.ShowEditorForm(); 
       },
-      didInsertElement:function (){
-        this._super();
-        $("button", this.$()).button();
-      },
     }),
-    didInsertElement:function (){
+    didInsertElement:function(){
+      var hover = 0;
       this._super();
-      $(".block-growcalc-fertilizer .filter").listFilter(this.$());
-    },
-  });
+      $(".block-growcalc-fertilizer .filter")
+        .listFilter(this.$())
+        .focus(function () {
+          if (hover == 0) {
+            $('#calc-fertilizers').stop(true, true).slideDown();
+            $('#block-growcalc_fertilizer-growcalc_fertilizers').addClass('expanded');
+          }
+          hover++;
+        })
+        .blur(function () {
+          hover--;
+          if (hover == 0) {
+            $('#calc-fertilizers').stop(true, true).slideUp();
+            $('#block-growcalc_fertilizer-growcalc_fertilizers').removeClass('expanded');
+          }
+        })
 
-  GrowCalc.FertilizerElementView = Ember.View.extend({
-    content: null,
-    template: Ember.Handlebars.compile('<li>{{view.content.Element.Symbol}} {{view GrowCalc.NumberField valueBinding="view.content.Amount"}}<button class="action action-delete" {{action "Delete" target on="click"}} title="Удаление"><span class="ui-icon ui-icon-close"></span></button></li>'),
-    Delete: function () {
-      this.content.Host.RemoveElement(this.content.Element, true);
+      $(".block-growcalc-fertilizer")
+        .mouseenter(function () {
+          if (hover == 0) {
+            $('#calc-fertilizers').stop(true, true).slideDown();
+            $('#block-growcalc_fertilizer-growcalc_fertilizers').addClass('expanded');
+          }
+          hover++;
+        })
+        .mouseleave(function () {
+          hover--;
+          if (hover == 0) {
+            $('#calc-fertilizers').stop(true, true).slideUp();
+            $('#block-growcalc_fertilizer-growcalc_fertilizers').removeClass('expanded');
+          }
+        });
+      $('#calc-fertilizers').hide();
     }
   });
 
-  GrowCalc.NewFertilizerElementView = Ember.View.extend({
+  GrowCalc.FertilizerElementsView = Ember.CollectionView.extend({
+    tagName: 'ul',
+    classNames: ['list', 'list-fertilizer-elements'],
+    itemViewClass:  Ember.View.extend({
+      tagName: 'li',
+      content: null,
+      contextBinding: 'content',
+      template: Ember.Handlebars.compile('{{Element.Symbol}} {{view GrowCalc.NumberField valueBinding="view.PercentAmount" classNames="with-button"}}<button class="btn action action-delete" {{action "Delete" target on="click"}} title="Удаление"><span class="ui-icon ui-icon-close"></span></button> %<br/>{{view GrowCalc.ScrollView max="100" valueBinding="view.PercentAmount" colorBinding="view.content.Element.Color" backgroundValueVisible="false"}}'),
+      PercentAmount: function (key, value) {
+        // getter
+        if (arguments.length === 1) {
+          var newValue = 100.0 * this.get('content.Amount');
+          if (newValue > 100) newValue = 100;
+          if (newValue < 0) newValue = 0;
+          return newValue;
+        // setter
+        } else {
+          if (value > 100) value = 100;
+          if (value < 0) value = 0;
+          this.set('content.Amount', value / 100);
+          return value;
+        }
+      }.property('content.Amount'),
+      Delete: function () {
+        this.content.Host.RemoveElement(this.content.Element, true);
+      },
+    }),
+  });
+
+  GrowCalc.FertilizerNewElementView = Ember.View.extend({
     Amount: 0,
     Host: undefined,
     ElementSymbol: "",
-    template: Ember.Handlebars.compile('<li>{{view JQ.AutoComplete valueBinding="view.ElementSymbol" sourceBinding="view.ElementAutocomplete" selectBinding="view.ElementSelected"}}<a {{action "Create" target on="click"}}>Добавить</a></li>'),
-    Create: function () {
+    template: Ember.Handlebars.compile('{{view JQ.AutoComplete valueBinding="view.ElementSymbol" minLength="0" sourceBinding="view.ElementAutocomplete" selectBinding="view.ElementSelected" classNames="with-button"}}' +
+      '<button class="btn action action-clear with-button" {{action "Clear" target on="click"}} title="Очистить"><span class="ui-icon ui-icon-close"></span></button>' +
+      '<button class="btn action action-dropdown with-button" {{action "Dropdown" target on="click"}} title="Выберите..."><span class="ui-icon ui-icon-triangle-1-s"></span></button>' +
+      '<button class="btn action action-addelement" {{action "AddElement" target on="click"}} title="Добавить"><span class="ui-icon ui-icon-arrowthick-1-e"></span></button>'),
+    Dropdown: function () {
+      this.get('childViews')[0].Search(this.get('ElementSymbol'));
+    },
+    Clear: function () {
+      this.set('ElementSymbol', '');
+    },
+    AddElement: function () {
       var that = this,
         Element = GrowCalc.GetElementBySymbol(that.get('ElementSymbol'));
       if (Element) {
-        if (typeof this.get('Host.Elements').find(function (element, index, enumerable) {
-          return (element.get('Element') === Element);
-        }) === 'undefined') {
+        if (undefined == this.get('Host.Elements').findProperty('Element', Element)) {
           that.get('Host').AddElement(Element, that.get('Amount'), true);
         } else {
           alert('Элемент уже содержится.');
@@ -414,7 +432,7 @@
       }
     },
     ElementSelected: function (e, ui) {
-      var that = this._context.content.editorView.get('FertilizerElementsView.childViews')[0];
+      var that = this._context.content.editorView.get('FertilizerNewElementView');
       that.set('ElementSymbol', ui.item.value);
     },
     ElementAutocomplete: function (request, response) {
@@ -429,12 +447,33 @@
       });
 
       response(ret);
-    }
+    },
   });
 
+  GrowCalc.FertilizersNewFertilizerView = Ember.View.extend({
+    template: Ember.Handlebars.compile('<button class="btn action action-new" {{action "ShowNewEditorForm" target on="click"}} title="Создание нового элемента"><span class="ui-icon ui-icon-plus"></span></button>'),
+    ShowNewEditorForm: function () {
+      var that = this;
+      var el = GrowCalc.AddFertilizer({ });
+      el.ShowEditorForm();
+    },
+    ElementSelected: function (e, ui) {
+      var that = this._context.content.editorView.get('FertilizerNewElementView');
+      that.set('ElementSymbol', ui.item.value);
+    },
+    ElementAutocomplete: function(request, response) {
+      var ret = [];
+      GrowCalc.Elements.forEach(function (element, index) {
+        if ((request.term.length == 0) || (element.get('Symbol').indexOf(request.term) !== -1) || (element.get('Description').indexOf(request.term) !== -1)) {
+          ret.pushObject({
+            label: element.get('Description'),
+            value: element.get('Symbol'),
+          });
+        }
+      });
 
-  GrowCalc.FertilizerElementsView = Ember.ContainerView.extend({
-    childViews: [],
+      response(ret);
+    },
   });
 
   GrowCalc.FertilizerEditorView = JQ.Dialog.extend({
@@ -445,12 +484,9 @@
     title: "",
     FertilizerElementsView: null,
     template: Ember.Handlebars.compile(
-      '<table class="table">' +
-        '<tr>' +
-          '<td><label>Наименование</label>{{view Ember.TextField valueBinding="view.content.Name"}}</td>' +
-          '<td><label>Описание</label>{{view Ember.TextField valueBinding="view.content.Description"}}</td>' +
-        '</tr>' +
-      '</table>' + 
+      '<label>Наименование</label>{{view Ember.TextField valueBinding="view.content.Name"}}' +
+      '<label>Описание</label>{{view Ember.TextField valueBinding="view.content.Description"}}' +
+      '<label>Элементы:</label>{{view Ember.ContainerView currentViewBinding="view.FertilizerNewElementView"}}' +
       '{{view Ember.ContainerView currentViewBinding="view.FertilizerElementsView"}}'
     ),
     buttons: {
@@ -471,16 +507,10 @@
       var that = this,
         fertilizer = that.content;
 
-      that.set('FertilizerElementsView', GrowCalc.FertilizerElementsView.create());
       that.set('title', 'Удобрение "' + fertilizer.get('Name') + '"');
       that._super();
-      $("button", that.$()).button();
-
-      var newFertilizerElementView = GrowCalc.NewFertilizerElementView.create({ Host: fertilizer });
-      that.get('FertilizerElementsView').get('childViews').pushObject(newFertilizerElementView);
-      fertilizer.get('Elements').forEach(function (element, index, enumerable) {
-        that.get('FertilizerElementsView').get('childViews').pushObject(element.view);
-      });
+      that.set('FertilizerNewElementView', GrowCalc.FertilizerNewElementView.create({ Host: fertilizer }));
+      that.set('FertilizerElementsView', GrowCalc.FertilizerElementsView.create({content: fertilizer.get('Elements')}));
     },
     Validate: function () {
       var retValue = true;
@@ -566,6 +596,7 @@
       var elements = values.Elements;
       values.Elements = [];
       values['_defaults'] = $.extend({}, values);
+      values['_defaults']['Elements'] = [];
       fer = GrowCalc.Fertilizer.create(values);
       GrowCalc.Fertilizers.pushObject(fer);
 
@@ -585,8 +616,8 @@
       fer,
       fer_key;
 
-    GrowCalc.fertilizersView = GrowCalc.FertilizersView.create({});
-    GrowCalc.fertilizersView.appendTo($('#calc-fertilizers'));
+    GrowCalc.fertilizersNewFertilizerView = GrowCalc.FertilizersNewFertilizerView.create({}).appendTo('#calc-fertilizers');
+    GrowCalc.fertilizersView = GrowCalc.FertilizersView.create({}).appendTo($('#calc-fertilizers'));
 
     if (GrowCalc.Drupal().supportLocalStorage) {
       for(i =0, l = localStorage.length; i < l; i++) {

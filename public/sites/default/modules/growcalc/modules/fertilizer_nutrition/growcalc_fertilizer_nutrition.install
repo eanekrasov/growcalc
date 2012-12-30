@@ -6,147 +6,41 @@
  * the entity types.
  */
 
-
-/**
- * Implements hook_schema().
- */
-function growcalc_fertilizer_nutrition_schema() {
-  $schema = array();
-
-  $schema['growcalc_fertilizer_nutrition'] = array(
-    'description' => 'The base table for fertilizer nutrition entities.',
-    'fields' => array(
-      'growcalc_fertilizer_nutrition_id' => array(
-        'description' => 'Primary Key: Identifier for a fertilizer nutrition.',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'type' => array(
-        'description' => 'The {growcalc_fertilizer_nutrition_type}.type of this fertilizer nutrition.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'language' => array(
-        'description' => 'The language of the fertilizer nutrition.',
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'name' => array(
-        'description' => 'The name of the fertilizer nutrition - a human-readable identifier.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'description' => array(
-        'description' => 'The description of the fertilizer nutrition',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'status' => array(
-        'description' => 'Boolean indicating whether the fertilizer nutrition is published (visible to non-administrators).',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 1,
-      ),
-      'created' => array(
-        'description' => 'The Unix timestamp when the fertilizer nutrition was created.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'changed' => array(
-        'description' => 'The Unix timestamp when the fertilizer nutrition was most recently saved.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'data' => array(
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big',
-        'serialize' => TRUE,
-        'description' => 'A serialized array of additional data.',
-      ),
-    ),
-    'primary key' => array('growcalc_fertilizer_nutrition_id'),
-    'indexes' => array(
-      'type' => array('type'),
-    ),
-  );
-
-  $schema['growcalc_fertilizer_nutrition_type'] = array(
-    'description' => 'Stores information about defined fertilizer nutrition types.',
-    'fields' => array(
-      'id' => array(
-        'type' => 'serial',
-        'not null' => TRUE,
-        'description' => 'Primary Key: Unique fertilizer nutrition type identifier.',
-      ),
-      'type' => array(
-        'description' => 'The machine-readable name of this fertilizer nutrition type.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-      'label' => array(
-        'description' => 'The human-readable name of this fertilizer nutrition type.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'weight' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'size' => 'tiny',
-        'description' => 'The weight of this fertilizer nutrition type in relation to others.',
-      ),
-      'data' => array(
-        'type' => 'text',
-        'not null' => FALSE,
-        'size' => 'big',
-        'serialize' => TRUE,
-        'description' => 'A serialized array of additional data related to this fertilizer nutrition type.',
-      ),
-    ) + entity_exportable_schema_fields(),
-    'primary key' => array('id'),
-    'unique keys' => array(
-      'type' => array('type'),
-    ),
-  );
-
-  return $schema;
-}
-
 /**
  * Implements hook_install().
  */
 function growcalc_fertilizer_nutrition_install() {
-  // Create the basic growcalc fertilizer type.
-  $growcalc_fertilizer_nutrition_type = growcalc_fertilizer_nutrition_type_create(array(
-    'type' => 'growcalc_fertilizer_nutrition',
-    'label' => t('Fertilizer nutrition'),
-    'weight' => 0,
-    'data' => '',
-    'status' => 1,
-    'module' => 'growcalc_fertilizer_nutrition',
-    'is_new' => TRUE
-  ));
-
-  growcalc_fertilizer_nutrition_type_save($growcalc_fertilizer_nutrition_type);
-
   // During installation, the t() function is unavailable, so we use get_t()
   // to store the name of the translation function.
   $t = get_t();
+
+  // We define the node type as an associative array.
+  $entity_type = array(
+    'type' => 'growcalc_fertilizer_nutrition',
+    'name' => $t('Fertilizer nutrition'),
+    // 'base' tells Drupal the base string for hook functions.
+    // This is often the module name; if base is set to 'mymodule', Drupal
+    // would call mymodule_insert() or similar for node hooks.
+    // In this case, we set base equal to 'node_content' so Drupal will handle
+    // our node as if we had designed it in the UI.
+    'base' => 'node_content',
+    'description' => $t('Fertilizer nutrition.'),
+    'title_label' => $t('Title'),
+    'custom' => TRUE,
+  );
+
+  // Complete the node type definition by setting any defaults not explicitly
+  // declared above.
+  // http://api.drupal.org/api/function/node_type_set_defaults/7
+  $entity_type = node_type_set_defaults($entity_type);
+
+  //We add a body field and set the body label immediately.
+  //node_add_body_field($content_type, $t('Description'));
+
+  // Save the content type
+  node_type_save($entity_type);
+
+  drupal_flush_all_caches();
 
   // Create all the fields we are adding to our content type.
   // http://api.drupal.org/api/function/field_create_field/7
@@ -160,7 +54,7 @@ function growcalc_fertilizer_nutrition_install() {
     field_create_instance($instance);
   }
 
-  drupal_flush_all_caches();
+  field_purge_batch(1000);
 }
 
 function _growcalc_fertilizer_nutrition_installed_fields() {
@@ -170,12 +64,24 @@ function _growcalc_fertilizer_nutrition_installed_fields() {
       'field_name'  => 'growcalc_fertilizer_nutrition',
       'cardinality' => 1,
       'type'        => 'entityreference',
-      'settings'    => array( 'target_type' => 'growcalc_fertilizer_nutrition', ),
+      'settings'    => array( 'target_type' => 'node', ),
     ),
     'growcalc_fertilizers' => array(
       'field_name'  => 'growcalc_fertilizers',
       'cardinality' => FIELD_CARDINALITY_UNLIMITED,
       'type'        => 'field_collection',
+      'settings'    => array(),
+    ),
+    'growcalc_fertilizer' => array(
+      'field_name'  => 'growcalc_fertilizer',
+      'cardinality' => 1,
+      'type'        => 'entityreference',
+      'settings'    => array( 'target_type' => 'node', ),
+    ),
+    'amount' => array(
+      'field_name'  => 'amount',
+      'cardinality' => 1,
+      'type'        => 'number_float',
       'settings'    => array(),
     ),
   );
@@ -186,8 +92,8 @@ function _growcalc_fertilizer_nutrition_installed_instances() {
   return array(
     'growcalc_fertilizers' => array(
       'field_name'  => 'growcalc_fertilizers',
-      'entity_type' => 'growcalc_fertilizer',
-      'bundle'      => 'growcalc_fertilizer',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_fertilizer_nutrition',
       'label'       => $t('Fertilizers'),
       'widget'      => array(
         'type'      => 'field_collection_embed',
@@ -213,6 +119,15 @@ function _growcalc_fertilizer_nutrition_installed_instances() {
       ),
       'required' => TRUE,
     ),
+    'growcalc_element_nutrition' => array(
+      'field_name'  => 'growcalc_element_nutrition',
+      'entity_type' => 'node',
+      'bundle'      => 'growcalc_fertilizer_nutrition',
+      'label'       => $t('Element nutrition'),
+      'widget'      => array(
+        'type'      => 'options_select',
+      ),
+    ),
   );
 }
 
@@ -221,18 +136,39 @@ function _growcalc_fertilizer_nutrition_installed_instances() {
  * Implements hook_uninstall().
  */
 function growcalc_fertilizer_nutrition_uninstall() {
-  foreach(array_reverse(_growcalc_fertilizer_nutrition_installed_instances()) as $instance) {
-    $instance = field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle']);
-    field_delete_instance($instance, TRUE);
+  // Gather all the example content that might have been created while this
+  // module was enabled.  Simple selects still use db_query().
+  // http://api.drupal.org/api/function/db_query/7
+  $result = db_query('SELECT nid FROM {node} n WHERE n.type = :type', array(':type' => 'growcalc_fertilizer_nutrition'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
   }
 
-  foreach (array_reverse(array_keys(_growcalc_fertilizer_nutrition_installed_fields())) as $field) {
+  // Delete all the nodes at once
+  // http://api.drupal.org/api/function/node_delete_multiple/7
+  node_delete_multiple($nids);
+
+  // Loop over each of the fields defined by this module and delete
+  // all instances of the field, their data, and the field itself.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  foreach (array_keys(_growcalc_fertilizer_nutrition_installed_fields()) as $field) {
     field_delete_field($field);
   }
 
-  field_purge_batch(1000);
+  // Loop over any remaining field instances attached to the element
+  // content type (such as the body field) and delete them individually.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  $instances = field_info_instances('node', 'growcalc_fertilizer_nutrition');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
 
-  // At uninstall time we'll notify field.module that the entity was deleted
-  // so that attached fields can be cleaned up.
-  field_attach_delete_bundle('growcalc_fertilizer_nutrition' , 'growcalc_fertilizer_nutrition');
+  // Delete our content type
+  // http://api.drupal.org/api/function/node_type_delete/7
+  node_type_delete('growcalc_fertilizer_nutrition');
+
+  // Purge all field infromation
+  // http://api.drupal.org/api/function/field_purge_batch/7
+  field_purge_batch(1000);
 }

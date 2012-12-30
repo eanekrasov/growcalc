@@ -3,93 +3,80 @@
 (function ($, Ember, GrowCalc, Drupal, window, document, undefined) {
   "use strict";
 
-  GrowCalc.ElementNutrition = Ember.Object.extend({
-    '_defaults': {
-      Id: undefined,
-      Description: undefined,
-      Name: undefined,
-      Tag: undefined,
-      Elements: undefined
-    },
-    Id: undefined,
-    Description: undefined,
-    Name: undefined,
-    Tag: undefined,
-    Elements: undefined,
+  GrowCalc.ElementNutrition = Ember.Object.extend(GrowCalc.DrupalSavable, {
+    Type: 'element_nutrition',
 
+    '_defaults': {
+      Id: 0,
+      Name: "",
+      Tag: "",
+      Elements: []
+    },
+    Id: 0,
+    Name: "",
+    Tag: "",
+    Elements: [],
+    /**
+     * ElementNutrition.UpdateDefaults().
+     *
+     * Обновление значений по-умолчанию.
+     */
+    UpdateDefaults: function () {
+      var that = this,
+        defaults = that.get('_defaults'),
+        i;
+
+      for(i in defaults) {
+        if (i !== 'Elements') {
+          defaults[i] = that.get(i);
+        }
+      }
+
+      // apply removed elements
+      defaults.Elements.forEach(function (defaultElement, defaultsIndex, defaultElementsEnumerable) {
+        var element = that.get('Elements').findProperty('Element', defaultElement.Element);
+        if (typeof element === 'undefined') {
+          defaults.Elements.removeObject(element);
+        }
+      });
+
+      that.SaveTemporaryElements();
+
+      that.get('Elements').forEach(function (element, index, enumerable) {
+        var defaultElement = defaults.Elements.findProperty('Element', element.Element);
+        if (typeof defaultElement !== 'undefined') {
+          defaultElement.set('Amount', element.get('Amount'));
+        }
+      });
+    },
+    /**
+     * ElementNutrition.PrepareData().
+     *
+     * Prepares data for saving.
+     */
+    PrepareData: function () {
+      var that = this;
+      return {
+        id: that.get('Id'),
+        name: that.get('Name'),
+        tag: that.get('Tag'),
+        elements: that.get('Elements').map(function (element, index, enumerable) {
+          return {
+            element: element.Element.Symbol,
+            amount: element.Amount
+          };
+        }),
+      };
+    },
     /**
      * ElementNutrition.Commit().
      *
-     * Сохранение модели в друпале.
-     * (growcalc/element_nutrition/%growcalc_element_nutrition/ajax/update)
+     * Сохранение изменений в модели.
      */
     Commit: function () {
-      var that = this,
-        successCallback = function (data) {
-          var key, defaults, Elements;
-          if (typeof data.success !== 'undefined' && data.success) {
-
-            defaults = that.get('_defaults');
-
-            for(var i in defaults) {
-              if (i !== 'Elements') {
-                defaults[i] = that.get(i);
-              }
-            }
-
-            var Elements = that.get('Elements');
-
-            // apply removed elements
-            for(var element in defaults.Elements) {
-              if (!Elements.hasOwnProperty(element)) {
-                that.SetElementTemporary(element);
-              }
-            }
-
-            that.SaveTemporaryElements();
-
-            for(var element in Elements) {
-              if (defaults.Elements[element] instanceof Ember.Object) {
-                defaults.Elements[element].set('Amount', Elements[element].Amount);
-              }
-            }
-
-            //that.set('_defaults', defaults);
-          }
-        },
-        errorCallback = function (jqXHR, textStatus, errorThrown) {
-          that.Rollback();
-        };
-
-      if (that.Changed()) {
-        var elements = [];
-        var Elements = that.get('Elements');
-
-        for(var i in Elements) {
-          if (Elements[i] instanceof Ember.Object) {
-            elements.pushObject({
-              Element: Elements[i].Element.Name,
-              Amount: Elements[i].Amount
-            });
-          }
-        }
-
-        $.ajax({
-          type: 'POST',
-          url: Drupal.settings.basePath + "growcalc/element_nutrition/" + that.get('Id') + "/ajax/update",
-          data: {
-            Id: that.get('Id'),
-            Description: that.get('Description'),
-            Name: that.get('Name'),
-            Tag: that.get('Tag'),
-            Elements: elements,
-          },
-          success: successCallback,
-          error: errorCallback
-        });
-      }
+      this.UpdateDefaults();
+      this.SaveToServer();
     },
-
     /**
      * ElementNutrition.Changed().
      *
@@ -99,44 +86,84 @@
      */
     Changed: function () {
       var isChanged = false,
-        defaults = this.get('_defaults'),
-        k,i;
+        that = this,
+        defaults = that.get('_defaults'),
+        k;
       for (k in defaults) {
         if (k !== 'Elements') {
-          if (defaults[k] !== this.get(k)) {
+          if (defaults[k] !== that.get(k)) {
             isChanged = true;
             break;
           }
         }
       }
 
-      var Elements = this.get('Elements');
-      
-      var count = 0;
-      for(var i in Elements) {
-        if (Elements[i] instanceof Ember.Object) {
-          count++;
+      if (!isChanged) {
+        if ((that.get('Elements').length !== defaults.Elements.length) || (null !== defaults.Elements.find(function (defaultElement, defaultsIndex, defaultElementsEnumerable) {
+            return (undefined != that.get('Elements').find(function (element, elementsIndex, elementsEnumerable) {
+              return (element.get('Element') === defaultElement.get('Element')) && (element.get('Amount') !== defaultElement.get('Amount'));
+            }));
+          }))) {
+          isChanged == true;
         }
       }
-      var defaultCount = 0;
-      for(var i in defaults.Elements) {
-        if (defaults.Elements[i] instanceof Ember.Object) {
-          defaultCount++;
-        }
-      }
-      if (count == defaultCount) {
-        for(var element in defaults.Elements) {
-          if ((typeof Elements[element] === 'undefined') || (defaults.Elements[element].Amount !== Elements[element].Amount)) {
-            isChanged = true;
-            break;
-          }
-        }
-      } else {
-        isChanged = true;
-      }
+
       return isChanged;
     },
-
+    /**
+     * ElementNutrition.SaveToServer().
+     *
+     * Сохранение модели в друпале.
+     * (growcalc/ajax/element_nutrition/%growcalc_element_nutrition/update)
+     */
+    SaveToServer: function () {
+      var that = this;
+      GrowCalc.Drupal().Save({
+        object: that,
+        success: function (data) {
+          if (typeof data.success !== 'undefined' && data.success) {
+            if (that.IsTemporary()) {
+              that.set('Id', data.id);
+            }
+            that.UpdateDefaults();
+          }
+        },
+        failure: function (jqXHR, textStatus, errorThrown) {
+          that.Rollback();
+        }
+      });
+    },
+    /**
+     * ElementNutrition.Delete().
+     *
+     * Удаление элемента из базы данных.
+     */
+     Delete: function () {
+      var that = this;
+      if (!that.IsTemporary()) {
+        GrowCalc.Drupal().Delete({
+          object: that,
+          success: function (data) {
+            var key, defaults;
+            if (typeof data.success !== 'undefined' && data.success) {
+              that.Destroy();
+            }
+          }
+        });
+      } else {
+        that.Destroy();
+      }
+    },
+    /**
+     * ElementNutrition.Destroy().
+     *
+     * Удаление из фронтенда.
+     * Почистить за собой.. ^_^
+     */
+    Destroy: function () {
+      this.CloseDialogs();
+      GrowCalc.ElementNutritions.removeObject(this);
+    },
     /**
      * ElementNutrition.Rollback().
      *
@@ -144,10 +171,9 @@
      * Для восстановления используется (Array)this.get('_defaults');
      */
     Rollback: function () {
-      var defaults = this.get('_defaults'),
-        key, i,
-        Elements = this.get('Elements');
-
+      var that = this,
+        defaults = this.get('_defaults'),
+        i;
       // Простые поля переносятся скопом.
       for(i in defaults) {
         if (i !== 'Elements') {
@@ -157,323 +183,433 @@
 
       this.RemoveTemporaryElements();
 
-      for(i in defaults.Elements) {
-        if (defaults.Elements[i] instanceof Ember.Object) {
-          if (!Elements.hasOwnProperty(i)) {
-            this.AddElement(defaults.Elements[i].Element, defaults.Elements[i].Amount);
-          }
-        }
-      }
-
-      var Elements = this.get('Elements');
-      for(var element in defaults.Elements) {
-        if (Elements[element] instanceof Ember.Object) {
-          Elements[element].set('Count', defaults.Elements[element].Amount);  
-        }
-      }
-      this.set('Elements', Elements);
-    },
-
-    /**
-     * ElementNutrition.ShowEditor().
-     *
-     * Открыть форму редактирования программы питания.
-     * Форма рендерится в JQuery UI Dialog.
-     */
-    ShowEditor: function () {
-      var that = this,
-        k, i;
-
-      that.editor = $('<div />').attr('title', "Редактирование " + that.get("Name"));
-
-      for(var i in that.formElements) {
-        that.formElements[i].appendTo(that.editor);
-      }
-
-      that.editor.dialog({
-        width: 390,
-        minWidth: 390,
-        close: function(event, ui) {
-          if (typeof event.cancelable !== 'undefined' && event.cancelable ) {
-            that.Rollback();
-          }
-          that.DestroyEditor();
+      defaults.Elements.forEach(function (defaultElement, defaultsIndex, defaultsEnumerable) {
+        if (undefined == that.get('Elements').findProperty('Element', defaultElement.get('Element'))) {
+          that.AddElement(defaultElement.Element, defaultElement.Amount);
         }
       });
-    },
-    DestroyEditor: function () {
-      var that = this;
-      for(var i in that.formElements) {
-        that.formElements[i].remove();
-      }
-    },
-    AddElement: function (Element, Amount, temporary = false) {
-      var element = Ember.Object.create({'Element': Element, 'Amount': parseFloat(Amount), 'Host': this});
-      element.controller = GrowCalc.ElementNutritionElementController.create({ content: element });
-      element.view = GrowCalc.ElementNutritionElementView.create({ controller: element.controller });
-      this.formElements.ElementNutritionElements.get('childViews').pushObject(element.view);
-      var Elements = this.get('Elements');
-      Elements[Element.Name] = element;
-      if (!temporary) {
-        this.get('_defaults').Elements[Element.Name] = Ember.Object.create({'Element': Element, 'Amount': parseFloat(Amount)});
-      }
-    },
-    addNewElementForm: function () {
-      var newElementNutritionElementView = GrowCalc.NewElementNutritionElementView.create({ Host: this });
-      this.formElements.ElementNutritionElements.get('childViews').pushObject(newElementNutritionElementView);
-    },
-    RemoveElement: function (Element, temporary = false) {
-      var Elements = this.get('Elements');
 
-      if (Elements[Element.Name] instanceof Ember.Object) {
-        var childElement = Elements[Element.Name];
-        var childViews = this.formElements.ElementNutritionElements.get('childViews');
-        childViews.forEach(function (item, index, enumerable) {
-          if (item === childElement.view) {
-            childViews.splice(index, 1);
+      defaults.Elements.forEach(function (defaultElement, defaultsIndex, defaultsEnumerable) {
+        that.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
+          if (element.get('Element') === defaultElement.get('Element')) {
+            element.set('Amount', defaultElement.get('Amount'));  
           }
         });
-        
-        childElement.view.remove();
-        delete childElement.controller;
-        delete childElement.view;
-        delete Elements[Element.Name];
+      });
+    },
+    /**
+     * ElementNutrition.ShowEditorForm().
+     *
+     * Открыть форму редактирования питания.
+     * Форма рендерится в JQuery UI Dialog.
+     */
+    ShowEditorForm: function () {
+      var that = this;
+      if (typeof that.editorView === 'undefined') {
+        that.editorView = GrowCalc.ElementNutritionEditorView.create({ content: that, autoOpen: true });
+        that.editorView.appendTo(document);
+      } else {
+        that.editorView.OpenDialog();
+      }
+    },
+    /**
+     * Element.ShowDeleteForm().
+     *
+     * Открыть форму подтверждения удаления.
+     * Форма рендерится в JQuery UI Dialog.
+     */
+    ShowDeleteForm: function () {
+      var that = this;
+      if (typeof that.deleteView === 'undefined') {
+        that.deleteView = GrowCalc.ElementNutritionDeleteView.create({ content: that, autoOpen: true });
+        that.deleteView.appendTo(document);
+      } else {
+        that.deleteView.OpenDialog();  
+      }
+    },
+    DestroyEditorForm: function () {
+      var that = this;
+      if (typeof that.editorView !== 'undefined') {
+        that.editorView.CloseDialog();
+        delete that.editorView;
+      }
+    },
+    DestroyDeleteForm: function () {
+      var that = this;
+      if (typeof that.deleteView !== 'undefined') {
+        that.deleteView.CloseDialog();
+        delete that.deleteView;
+      }
+    },
+    CloseDialogs: function () {
+      this.DestroyEditorForm();
+      this.DestroyDeleteForm();
+    },
+    AddElement: function (Element, Amount, temporary) {
+      temporary = temporary || false;
+      var element = Ember.Object.create({'Element': Element, 'Amount': parseFloat(Amount), 'Host': this});
+      this.get('Elements').pushObject(element);
+      if (!temporary) {
+        this.SetElementPermanent(element);
+      }
+    },
+    RemoveElement: function (Element, temporary) {
+      temporary = temporary || false;
+      var defaults = this.get('_defaults'),
+        element = this.get('Elements').findProperty('Element', Element);
+      if (typeof element !== 'undefined') {
+        this.get('Elements').removeObject(element);
 
         if (!temporary) {
-          delete this.get('_defaults').Elements[Element.Name];
+          this.SetElementTemporary(element);
         }
+
+        element.destroy();
       }
     },
     RemoveTemporaryElements: function () {
-      var Elements = this.get('Elements'),
+      var that = this,
         defaults = this.get('_defaults');
-      for(var i in Elements) {
-        if (Elements[i] instanceof Ember.Object) {
-          if (!defaults.Elements.hasOwnProperty(i)) {
-            this.RemoveElement(Elements[i].Element, true);
-          }
+      this.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
+        if (null === defaults.Elements.findProperty('Element', element.get('Element'))) {
+          that.RemoveElement(element.Element, true);
         }
-      }
+      });
     },
-    SetElementPermanent: function(Element) {
-      if (!this.get('_defaults').Elements.hasOwnProperty(Element.Element.Name)) {
-        this.get('_defaults').Elements[Element.Element.Name] = Ember.Object.create({'Element': Element.Element, 'Amount': parseFloat(Element.Amount)});
+    SetElementPermanent: function(element) {
+      var that = this,
+        defaults = that.get('_defaults'),
+        el = defaults.Elements.findProperty('Element', element.get('Element'));
+      if (null !== el) {
+        defaults.Elements.pushObject(Ember.Object.create({
+          'Element': element.Element, 
+          'Amount': element.Amount,
+        }));
       }
     },
     SetElementTemporary: function(element) {
-      if (this.get('_defaults').Elements.hasOwnProperty(element)) {
-        delete this.get('_defaults').Elements[element];
-      } 
+      var that = this,
+        defaults = that.get('_defaults'),
+        defaultElement = defaults.Elements.findProperty('Element', element.get('Element'));
+      if (null !== defaultElement) {
+        defaults.Elements.removeObject(defaultElement);
+        defaultElement.destroy();
+      }
     },
     SaveTemporaryElements: function () {
-      var Elements = this.get('Elements'),
+      var that = this,
         defaults = this.get('_defaults');
-      for(var i in Elements) {
-        if (Elements[i] instanceof Ember.Object) {
-          if (!defaults.Elements.hasOwnProperty(i)) {
-            this.SetElementPermanent(Elements[i]);
-          }
+      that.get('Elements').forEach(function (element, elementsIndex, elementsEnumerable) {
+        if (null === defaults.Elements.findProperty('Element', element.get('Element'))) {
+          that.SetElementPermanent(element);
         }
+      });
+    },
+    MaxElementAmount: function () {
+      var max = this.get('MaxElementValue');
+      this.get('Elements').forEach(function (f) {
+        max = (max > f.get('Amount')) ? max : f.get('Amount');
+      });
+      return Math.floor(max + 1);
+    }.property('MaxElementValue'),
+    MaxElementValue: 200,
+    ElementAmountChanged: function (element) {
+      var value = element.get('Amount'),
+        max = this.get('MaxElementValue');
+      if (max < value) {
+        this.set('MaxElementValue', value);
       }
-    }
+    },
   });
 
-  GrowCalc.ElementNutritionController = Ember.ObjectController.extend({
-    ElementNutritionBinding: 'content'
+  GrowCalc.ElementNutritionsView = Ember.CollectionView.extend({
+    tagName: 'ul',
+    classNames: [ 'list', 'list-element-nutritions'],
+    contentBinding: 'GrowCalc.ElementNutritions',
+    itemViewClass: Ember.View.extend({
+      tagName: 'li',
+      content: null,
+      contextBinding: 'content',
+      template: Ember.Handlebars.compile(
+        '{{Name}} {{Tag}}' +
+        '<ul class="elements">' +
+        '{{#each view.content.Elements}}' +
+        '<li>{{Element.Symbol}} - {{Amount}}</li>' +
+        '{{/each}}' +
+        '</ul>' +
+        '<button class="btn btn-mini action action-edit" {{action "ShowEditorForm" target on="click"}} title="Редактирование"><i class="icon-edit"></i></button>'
+      ),
+      doubleClick: function () {
+        this.content.ShowEditorForm(); 
+      },
+      ShowEditorForm: function () {
+        this.content.ShowEditorForm(); 
+      },
+    }),
+    didInsertElement:function(){
+      this._super();
+      $(".block-growcalc-element-nutrition .filter").listFilter(this.$());
+    },
+  });
+  
+  GrowCalc.ElementNutritionElementsView = Ember.CollectionView.extend({
+    classNames: ['element-nutrition-elements', 'clearfix', 'data'],
+    tagName: 'ul',
+    itemViewClass: Ember.View.extend({
+      tagName: 'li',
+      content: null,
+      contextBinding: 'content',
+      template: Ember.Handlebars.compile(
+        '<div class="symbol">{{Element.Symbol}}</div>' +
+        '{{view GrowCalc.ScrollView' +
+        ' maxBinding="view.content.Host.MaxElementAmount"' +
+        ' valueBinding="view.content.Amount"' +
+        ' colorBinding="view.content.Element.Color"' +
+        ' backgroundValueVisible="false"' +
+        ' orientation="vertical"' +
+        ' precision="0"' +
+        ' reversed="true"' +
+        '}}'
+      ),
+    }),
   });
 
-  GrowCalc.ElementNutritionView = Ember.View.extend({
-    // the controller is the initial context for the template
-    controller: null,
-    template: Ember.Handlebars.compile('<li class="element-nutrition-view-{{unbound Id}}">{{Name}} {{Description}} {{Tag}} <a {{action "ShowEditor" target on="click"}}>Редактировать</a></li>'),
-    ShowEditor: function () {
-      this.controller.content.ShowEditor(); 
-    }
-  });
-
-  GrowCalc.ElementNutritionElementController = Ember.ObjectController.extend({
-    'Delete': function () {
-      this.content.Host.RemoveElement(this.content.Element, true);
-    }
-  });
-
-  GrowCalc.ElementNutritionElements = Ember.ContainerView.extend({
-    childViews: []
-  });
-
-  GrowCalc.ElementNutritionElementView = Ember.View.extend({
-    controller: null,
-    template: Ember.Handlebars.compile('<li>{{controller.content.Element.Name}} {{view GrowCalc.NumberField valueBinding="view.controller.content.Amount"}}<a {{action "Delete" target on="click"}}>Удалить</a><br/>{{view GrowCalc.ScrollView max="200" valueBinding="view.controller.content.Amount"}}</li>'),
-    Delete: function () {
-      this.controller.Delete();
-    }
+  GrowCalc.ElementNutritionLegendView = Ember.CollectionView.extend({
+    classNames: ['element-nutrition-legend'],
+    tagName: 'ul',
+    itemViewClass: Ember.View.extend({
+      tagName: 'li',
+      content: null,
+      contextBinding: 'content',
+      template: Ember.Handlebars.compile(
+        '<div class="symbol">{{Element.Symbol}}</div>' +
+        '{{view GrowCalc.NumberField valueBinding="view.content.Amount" size="2" classNames="with-button"}}' +
+        '<button class="btn action action-delete" {{action "Delete" target on="click"}} title="Удаление"><i class="icon-remove"></i></button>'
+      ),
+      Delete: function () {
+        this.content.Host.RemoveElement(this.content.Element, true);
+      }
+    }),
   });
 
   GrowCalc.NewElementNutritionElementView = Ember.View.extend({
-    Element: undefined,
-    Amount: 0,
+    Amount: 1,
     Host: undefined,
-    template: Ember.Handlebars.compile('<li>{{view Ember.TextField valueBinding="view.Element"}}<a {{action "Create" target on="click"}}>Добавить</a></li>'),
+    ElementSymbol: "",
+    //tagName: 'li',
+    template: Ember.Handlebars.compile('{{view JQ.AutoComplete minLength="0" valueBinding="view.ElementSymbol" sourceBinding="view.ElementAutocomplete" selectBinding="view.ElementSelected" classNames="with-button"}}' +
+      '<button class="btn action action-clear with-button" {{action "Clear" target on="click"}} title="Очистить"><span class="ui-icon ui-icon-close"></span></button>' +
+      '<button class="btn action action-dropdown with-button" {{action "Dropdown" target on="click"}} title="Выберите..."><span class="ui-icon ui-icon-triangle-1-s"></span></button>' +
+      '<button class="btn action action-create" {{action "Create" target on="click"}}><span class="ui-icon ui-icon-plus"></span></button>'),
+    Dropdown: function () {
+      this.get('childViews')[0].Search(this.get('ElementSymbol'));
+    },
+    Clear: function () {
+      this.set('ElementSymbol', '');
+    },
     Create: function () {
-      var isContains = false;
-      for(var i in this.Host.Elements) {
-        if (this.Host.Elements[i] instanceof Ember.Object) {
-          if (this.Host.Elements[i].Element.Name == this.Element) {
-            isContains = true;
-            alert('Элемент уже содержится.');
-          }
-        }
-      }
-      if (!isContains) {
-        var element = GrowCalc.GetElementByName(this.Element);
-        if (!element) {
-          alert('Такого элемента не существует');
+      var that = this,
+        Element = GrowCalc.GetElementBySymbol(that.get('ElementSymbol'));
+      if (Element) {
+        if (typeof this.get('Host.Elements').findProperty('Element', Element) === 'undefined') {
+          that.get('Host').AddElement(Element, that.get('Amount'), true);
         } else {
-          this.Host.AddElement(element, this.Amount, true);
+          alert('Элемент уже содержится.');
         }
+      } else {
+        alert('Неправильный ввод.');
       }
-    }
+    },
+    ElementSelected: function (e, ui) {
+      var that = this._context.content.editorView.get('childViews')[0];
+      that.set('ElementSymbol', ui.item.value);
+    },
+    ElementAutocomplete: function(request, response) {
+      var ret = [];
+      GrowCalc.Elements.forEach(function (element, index) {
+        if ((request.term.length == 0) || (element.get('Symbol').indexOf(request.term) !== -1) || (element.get('Description').indexOf(request.term) !== -1)) {
+          ret.pushObject({
+            label: element.get('Description'),
+            value: element.get('Symbol'),
+          });
+        }
+      });
+
+      response(ret);
+    },
   });
 
-
-  GrowCalc.ElementNutritionFields = Ember.View.extend({
-    // the controller is the initial context for the template
-    controller: null,
-    // {{view Ember.TextField valueBinding="view.controller.content.Name"}}
-    template: Ember.Handlebars.compile('<div>' +
-        '<table><tr>' +
-          '<td><label>Name</label></td>' +
-          '<td>{{view Ember.TextField valueBinding="view.controller.content.Name"}}</td>' +
-        '</tr>' +
-        '<tr>' +
-          '<td><label>Description</label></td>' + 
-          '<td>{{view Ember.TextField valueBinding="view.controller.content.Description"}}</td>' +
-        '</tr>' +
-        '<tr>' +
-          '<td><label>Tag</label></td>' + 
-          '<td>{{view Ember.TextField valueBinding="view.controller.content.Tag"}}</td>' +
-        '</tr></table>' +
-      '</div>'),
-  });
-
-  GrowCalc.ElementNutritionButtons = Ember.View.extend({
-    // the controller is the initial context for the template
-    controller: null,
-    // {{view Ember.TextField valueBinding="view.controller.content.Name"}}
-    template: Ember.Handlebars.compile('<div>' +
-        '<p>' +
-          '<button {{action "Commit" on="click"}}>Сохранить</button>' +
-          '<button {{action "Rollback" on="click"}}>Отмена</button>' +
-        '</p>' +
-      '</div>'),
+  GrowCalc.ElementNutritionEditorView = JQ.Dialog.extend({
+    classNames: ['element-nutrition-editor-dialog'],
+    width: 560,
+    minWidth: 350,
+    content: null,
+    title: "",
+    template: Ember.Handlebars.compile(
+      '<div><label>Наименование</label>{{view Ember.TextField valueBinding="view.content.Name"}}</div>' +
+      '{{view GrowCalc.NewElementNutritionElementView HostBinding="view.content"}}' +
+      '<div class="graph">' +
+        '{{view GrowCalc.ElementNutritionElementsView contentBinding="view.content.Elements"}}' +
+        '<div class="legend">' +
+          '{{view GrowCalc.ElementNutritionLegendView contentBinding="view.content.Elements"}}' +
+        '</div>' +
+      '</div>'
+    ),
+    buttons: {
+      'Сохранить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.CommitAndClose();
+      },
+      'Отмена': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.RollbackAndClose();
+      },
+      'Удалить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.content.ShowDeleteForm();
+      },
+    },
+    didInsertElement: function() {
+      this.set('title', 'Питание "' + this.content.get('Name') + '"');
+      this._super();
+    },
     Validate: function () {
       var retValue = true;
-      var elementNutrition = this.controller.content;
-
-      //if (... ) {
-      //  alert("Message");
-      //  retValue = false;
-      //}
+      var node = this.content;
 
       return retValue;
     },
-    Commit: function () {
-      var elementNutrition = this.controller.content;
+    CommitAndClose: function () {
+      var node = this.content;
       if (this.Validate()) {
-        elementNutrition.editor.dialog("close");
-        elementNutrition.Commit();
+        node.DestroyEditorForm();
+        node.Commit();
       }
     },
-    Rollback: function () {
-      var elementNutrition = this.controller.content;
-
-      elementNutrition.editor.dialog("close"); 
-      elementNutrition.Rollback();
+    RollbackAndClose: function () {
+      var node = this.content;
+      node.DestroyEditorForm();
+      node.Rollback();
+    },
+    close: function(event, ui) {
+      var that = Ember.View.views[$(this).attr('id')],
+        node;
+      if ((typeof event !== 'undefined') && (typeof event.cancelable !== 'undefined') && (event.cancelable)) {
+        that.RollbackAndClose();
+      }
     }
   });
 
+  GrowCalc.ElementNutritionDeleteView = JQ.Dialog.extend({
+    classNames: ['element-nutrition-delete-dialog'],
+    width: 300,
+    minWidth: 300,
+    content: null,
+    title: "Удалить питание?",
+    template: Ember.Handlebars.compile('<p>Вы действительно хотите удалить питание "{{Name}}"?</p>'),
+    buttons: {
+      'Удалить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.content.DestroyDeleteForm();
+        that.content.Delete();
+      },
+      'Отмена': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.content.DestroyDeleteForm();
+      }
+    },
+    close: function(event, ui) {
+      var that = Ember.View.views[$(this).attr('id')];
+      if ((typeof event !== 'undefined') && (typeof event.cancelable !== 'undefined') && (event.cancelable)) {
+        that.content.DestroyDeleteForm();
+      }
+    }
+  });
 
   // Массив _всех_ программ питания, доступных пользователю.
-  GrowCalc.ElementNutritions = {};
+  GrowCalc.ElementNutritions = [];
 
-  GrowCalc.GetElementNutritionById = function (id) {
-    if (typeof GrowCalc.ElementNutritions[id] !== 'undefined') {
-      return GrowCalc.ElementNutritions[id];
-    } else {
-      return false;
-    }
-  };
+  GrowCalc.GetElementNutritionsBy = function (field, value, regexp) {
+    if (typeof regexp === 'undefined') regexp = false;
+    regexp = regexp && new RegExp(value);
 
-  GrowCalc.GetElementNutritionByName = function (name) {
-    var isContains = false;
-    for(var i in GrowCalc.ElementNutritions) {
-      if (GrowCalc.ElementNutritions[i] instanceof Ember.Object) {
-        if (GrowCalc.ElementNutritions[i].Name == name) {
-          isContains = true;
-          return GrowCalc.ElementNutritions[i];
-        }
+    return GrowCalc.ElementNutritions.filter(function(item, index, self) {
+      if (regexp) {
+        return regexp.test(item.get(field));
+      } else {
+        return (item.get(field) == value);
       }
-    }
-  
-//    if (!isContains) {
-    return false;
-//    }
+    });
   };
 
-  GrowCalc.AddElementNutrition = function(id, description, name, tag, elements) {
-    var elnut = GrowCalc.GetElementNutritionById(id),
-      k;
+  GrowCalc.GetElementNutritionById = function (value) {
+    return GrowCalc.GetElementNutritionsBy('Id', value)[0];
+  };
+
+  GrowCalc.GetElementNutritionByName = function (value) {
+    return GrowCalc.GetElementNutritionsBy('Name', value)[0];
+  };
+
+
+  GrowCalc.AddElementNutrition = function(values) {
+    var elnut = GrowCalc.GetElementNutritionById(values['Id']);
     if (!elnut) {
-      elnut = GrowCalc.ElementNutritions[id] = GrowCalc.ElementNutrition.create();
-      elnut.setProperties({
-        Id: id,
-        Description: description,
-        Name: name,
-        Tag: tag,
-        Elements: [],
-        _defaults: {
-          Id: id,
-          Description: description,
-          Name: name,
-          Tag: tag,
-          Elements: [],
-        },
-      });
+      var elements = values.Elements;
+      values.Elements = [];
+      values['_defaults'] = $.extend({}, values);
+      values['_defaults'].Elements = [];
 
-      elnut.controller = GrowCalc.ElementNutritionController.create({ content: elnut });
-      elnut.view = GrowCalc.ElementNutritionView.create({ controller: elnut.controller }).appendTo('#calc-element-nutritions .nav-element-nutritions');
+      elnut = GrowCalc.ElementNutrition.create(values);
 
-      elnut.formElements = {};
+      GrowCalc.ElementNutritions.pushObject(elnut);
 
-      elnut.formElements.ElementNutritionFields = GrowCalc.ElementNutritionFields.create({ controller: elnut.controller });
-      elnut.formElements.ElementNutritionElements = GrowCalc.ElementNutritionElements.create({ controller: elnut.controller });
-      elnut.formElements.ElementNutritionButtons = GrowCalc.ElementNutritionButtons.create({ controller: elnut.controller });
-
-      elnut.addNewElementForm();
       if (typeof elements !== 'undefined') {
         elements.forEach( function (item, index, enumerable) {
-          elnut.AddElement(GrowCalc.Elements[item.element], item.amount);
+          elnut.AddElement(GrowCalc.GetElementBySymbol(item.element), item.amount);
         });
       }
-
     }
 
     return elnut;
   };
 
   $(function() {
-    setTimeout(function () {
-      if (typeof Drupal.settings.growcalc !== 'undefined') {
-        if (typeof Drupal.settings.growcalc.element_nutritions !== 'undefined') {
-          for(var elnut_key in Drupal.settings.growcalc.element_nutritions) {
-            var elnut = Drupal.settings.growcalc.element_nutritions[elnut_key];
+    var i,
+      l,
+      entity,
+      entity_key;
 
-            GrowCalc.AddElementNutrition(elnut.id, elnut.description, elnut.name, elnut.tag, elnut.elements);  
+    GrowCalc.elementNutritionsView = GrowCalc.ElementNutritionsView.create({}).appendTo('#calc-element-nutritions');
+
+    if (GrowCalc.Drupal().supportLocalStorage) {
+      for(i =0, l = localStorage.length; i < l; i++) {
+        entity_key = localStorage.key(i);
+        if (entity_key.indexOf('ElementNutrition') !== -1) {
+          entity = JSON.parse(localStorage[entity_key]);
+          GrowCalc.AddElementNutrition({
+            Id: entity.id,
+            Name: entity.name,
+            Tag: entity.tag,
+            Elements: entity.elements,
+          });
+        }
+      }
+    }
+
+    if (typeof Drupal.settings.growcalc !== 'undefined') {
+      if (typeof Drupal.settings.growcalc.element_nutritions !== 'undefined') {
+        for(entity_key in Drupal.settings.growcalc.element_nutritions) {
+          if (Drupal.settings.growcalc.element_nutritions.hasOwnProperty(entity_key)) {
+            entity = Drupal.settings.growcalc.element_nutritions[entity_key];
+            GrowCalc.AddElementNutrition({
+              Id: entity.id,
+              Name: entity.name,
+              Tag: entity.tag,
+              Elements: entity.elements,
+            });
           }
         }
       }
-    }, 100);
-
-    $(".block-growcalc-element-nutrition .filter").listFilter($(".block-growcalc-element-nutrition .nav-element-nutritions"));
-  })
+    }
+  });
 })(jQuery, Ember, this.GrowCalc, Drupal, this, this.document);

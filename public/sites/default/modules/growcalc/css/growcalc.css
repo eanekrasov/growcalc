@@ -1,22 +1,183 @@
-
 .scroll {
-  width: 100%;
-  height: 20px;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid #D3D3D3;
+  position: relative;
+  border-radius: 4px;
+  cursor: e-resize;
+
+  background: -moz-linear-gradient(top,  rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,1) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,0)), color-stop(50%,rgba(255,255,255,1)), color-stop(100%,rgba(255,255,255,1))); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00ffffff', endColorstr='#ffffff',GradientType=0 ); /* IE6-9 */
+}
+
+.scroll.vertical {
+  min-height: 200px;
+  width: 26px;
+  padding: 2px;
   border: 1px solid rgba(82, 168, 236, 0.8);
   position: relative;
   border-radius: 4px;
-  overflow: hidden;
-  cursor: e-resize;
+  cursor: n-resize;
+
+  background: -moz-linear-gradient(left,  rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,1) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, right top, color-stop(0%,rgba(255,255,255,0)), color-stop(50%,rgba(255,255,255,1)), color-stop(100%,rgba(255,255,255,1))); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(left,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(left,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(left,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* IE10+ */
+  background: linear-gradient(to right,  rgba(255,255,255,0) 0%,rgba(255,255,255,1) 50%,rgba(255,255,255,1) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00ffffff', endColorstr='#ffffff',GradientType=1 ); /* IE6-9 */
 }
+
 
 .scroll:hover {
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
 }
 
-.scroll .value {
-  background: #f00;
-  height: 20px;
+.scroll .background-value {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: 18px;
+
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
 }
+
+.scroll.reversed .background-value {
+  left: auto;
+  right: 3px;
+}
+
+.scroll.vertical .background-value {
+  width: 18px;
+  height: 100%;
+
+  border-bottom-left-radius: 0;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+}
+
+.scroll.vertical.reversed .background-value {
+  top: auto;
+  bottom: 3px;
+}
+
+
+.scroll .background-value .color {
+  height: 18px;
+  background: #f00;
+}
+
+.scroll.vertical .background-value .color {
+  width: 18px;
+  height: 100%;
+  background: #f00;
+}
+
+
+.scroll .picker {
+  position: absolute;
+  top: -7px;
+  width: 9px;
+  height: 38px;
+  background: transparent url("../images/picker-horizontal.png") no-repeat left top;
+  cursor: col-resize;
+}
+
+.scroll.reversed .picker {
+  top: auto;
+  bottom: -7px;
+}
+
+.scroll.vertical .picker {
+  position: absolute;
+  height: 9px;
+  width: 38px;
+  background: transparent url("../images/picker-vertical.png") no-repeat left top;
+  margin-bottom: -1px;
+  cursor: row-resize;
+}
+
+.scroll.vertical.reversed .picker {
+  left: auto;
+  right: -7px;
+}
+
+
+.scroll .title {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  font-family: Verdana;
+  text-shadow: 0px 1px 1px #000;
+}
+
+.scroll .title.background {
+  left: 4px;
+  top: 4px;
+  color: #000;
+  text-shadow: none;
+}
+
+.scroll .value {
+  border: 1px solid #000;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: 18px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.scroll.reversed .value {
+  left: auto;
+  right: 3px;
+}
+
+.scroll.vertical .value {
+  width: 18px;
+  border-radius: 2px;
+}
+
+.scroll.vertical.reversed .value {
+  top: auto;
+  bottom: 3px;
+}
+
+.scroll .gradient {
+  background: -moz-linear-gradient(top,  rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(255,255,255,1)), color-stop(50%,rgba(255,255,255,0)), color-stop(100%,rgba(255,255,255,0))); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#00ffffff',GradientType=0 ); /* IE6-9 */
+
+  height: 18px;
+}
+
+.scroll.vertical .gradient {
+  background: -moz-linear-gradient(left,  rgba(255,255,255,1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, right top, color-stop(0%,rgba(255,255,255,1)), color-stop(50%,rgba(255,255,255,0)), color-stop(100%,rgba(255,255,255,0))); /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(left,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(left,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(left,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* IE10+ */
+  background: linear-gradient(to right,  rgba(255,255,255,1) 0%,rgba(255,255,255,0) 50%,rgba(255,255,255,0) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#00ffffff',GradientType=1 ); /* IE6-9 */
+
+  width: 18px;
+  height: 100%;
+}
+
 
 .scroll .min {
   position: absolute;
@@ -24,34 +185,228 @@
   top: 0;
 }
 
+
+.scroll.vertical .min {
+  display: none;
+}
+
+.scroll .background-label {
+  position: absolute;
+  top: 0;
+}
+
+.scroll.reversed .background-label {
+  top: auto;
+  bottom: 0;
+}
+
+.scroll.vertical .background-label {
+  display: none;
+}
+
+
 .scroll .max {
   position: absolute;
   right: 0;
   top: 0;
 }
 
-a.remove {
-  background: transparent url(../images/delete-16x16.png) no-repeat center center;
-  height: 16px;
-  width: 16px;
+.scroll.vertical .max {
+  display: none;
+}
+
+.with-button {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
   display: inline-block;
-  overflow: hidden;
-  text-indent: 16px;
+  vertical-align: middle;
+  margin-bottom: 0 !important;
+}
+.with-button + .action {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 4px;
   line-height: 16px;
 }
 
-.fertilizer-nutrition-editor input {
-  text-align: right;
-  border: 1px solid white;
-  background: transparent;
-  border-bottom: 1px dotted #c0c0c0;
+.with-button + .action .ui-button-text {
+  padding: 4px;
 }
 
-.fertilizer-nutrition-editor input:focus {
-  border: 1px solid #CCCCCC;
-  border-radius: 4px;
-  border-color: rgba(82, 168, 236, 0.8);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
-  outline: 0 none;
+.with-button + .ember-number-field input {
 
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.ember-number-field input,
+.ember-number-field .actions {
+  float: left;
+}
+
+.ember-number-field .actions {
+  height: 26px;
+  width: 12px;
+  position: relative;
+}
+
+.ember-number-field .actions .action-plus {
+    border-left: medium none;
+    border-radius: 0 0 0 0;
+    top: 0;
+    height: 13px;
+    left: 0;
+    position: absolute;
+    width: 12px;
+    border-top-right-radius: 5px;
+}
+
+.ember-number-field .actions .action-minus {
+    border-left: medium none;
+    border-radius: 0 0 0 0;
+    bottom: 0;
+    height: 13px;
+    left: 0;
+    position: absolute;
+    width: 12px;
+    border-bottom-right-radius: 5px;
+}
+
+
+.ember-number-field .actions .action .ui-button-text {
+  padding: 0;
+  margin: 0;
+  font-size: 8px;
+}
+
+.graph {
+  border-radius: 5px;
+  border: 1px solid #d3d3d3;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #FFFFFF 10%, #FFFFFF 100%) repeat scroll 0 0 transparent;
+  position: relative;
+}
+
+
+.graph .data .scroll:hover {
+  box-shadow: none;
+}
+
+.graph ul.data li {
+  display: inline-block !important;
+  margin: 5px;
+}
+
+.graph ul.data li .scroll {
+  background: none;
+  border: none;
+}
+
+.graph .legend {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 1px solid #d3d3d3;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #FFFFFF 50%, #FFFFFF 100%) repeat scroll 0 0 transparent;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.graph .legend ul {
+  margin: 0;
+}
+
+.graph .legend li {
+  list-style: none;
+  margin: 5px;
+  position: relative;
+}
+.graph .legend .ember-number-field input {
+  width: 60px;
+}
+
+.graph .legend li .symbol {
+  display: inline-block;
+  margin-right: 10px;
+  width: 30px;
+}
+
+.graph ul.data li .symbol {
+  bottom: 0;
+  position: absolute;
+  text-align: center;
+  width: 26px;
+}
+
+.graph ul.data li .scroll {
+  margin-bottom: 10px;
+}
+
+.trigger {
+  cursor: pointer;
+  background: #666;
+  border-radius: 13px;
+  height: 26px;
+  border: 1px solid #333;
+  overflow: hidden;
+  width: 80px;
+  margin: 0 auto;
+}
+
+
+.trigger .values {
+  width: 132px;
+  position: relative;
+}
+.trigger.animated .values {
+  transition: all 0.5s ease-out 0s;
+}
+
+.trigger .values .on,
+.trigger .values .off {
+  display: inline-block;
+  margin: 2px;
+  vertical-align: top;
+  line-height: 20px;
+  width: 50px;
+  text-shadow: 0px 0.5px 1px #ccc;
+  text-align: center;
+
+}
+
+.trigger .values .on {
+  color: #00ff00;
+  text-shadow: 0 0.5px 1px #00DD00;
+}
+
+.trigger .values .off {
+  color: #333333;
+  text-shadow: 0px 0.5px 1px #CCCCCC;
+}
+
+
+.trigger .picker {
+    box-shadow: 1px 2px 3px #000000 inset;
+    border-radius: 10px;
+    margin: 2px;
+    display: inline-block;
+    height: 20px;
+    width: 20px;
+    background: linear-gradient(to bottom, transparent 0%, #000000 50%, #000000 100%) repeat scroll 0 0 transparent;
+}
+
+.trigger.on .picker {
+  background: #00ff00;
+  box-shadow: 1px 3px 7px #000000 inset;
+}  
+
+.offline-trigger {
+  margin-top: 7px;
+}
+
+.volume .scroll{
+  width: 200px;
 }

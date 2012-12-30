@@ -1,21 +1,11 @@
-name = Growcalc Fertilizer Nutrition (Model)
-description = Provides entity functionality as an example to use in your own development projects
+name = Growcalc Fertilizer Nutrition
+description = Provides fertilizer nutrition node type
 core = 7.x
 
 package = GrowCalc
 
-dependencies[] = growcalc
-dependencies[] = entity
-dependencies[] = views
-dependencies[] = field_collection
-dependencies[] = entityreference
+dependencies[] = growcalc_fertilizer
+dependencies[] = growcalc_element_nutrition
 
 files[] = growcalc_fertilizer_nutrition.admin.inc
-files[] = growcalc_fertilizer_nutrition_type.admin.inc
 files[] = views/growcalc_fertilizer_nutrition.views.inc
-files[] = views/growcalc_fertilizer_nutrition_handler_link_field.inc
-files[] = views/growcalc_fertilizer_nutrition_handler_edit_link_field.inc
-files[] = views/growcalc_fertilizer_nutrition_handler_delete_link_field.inc
-files[] = views/growcalc_fertilizer_nutrition_handler_operations_links_field.inc
-files[] = views/growcalc_fertilizer_nutrition_handler_operations_field
-                

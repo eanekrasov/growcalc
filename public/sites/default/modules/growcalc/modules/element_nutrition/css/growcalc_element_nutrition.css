@@ -1,0 +1,126 @@
+.ui-dialog {
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+}
+
+.ui-dialog,
+.ui-dialog .element-nutrition-editor-dialog,
+.ui-dialog .ui-dialog-buttonpane {
+	background: #f8f8f8;
+}
+
+
+.element-nutrition-editor-dialog table tbody,
+.element-nutrition-editor-dialog table tr,
+.element-nutrition-editor-dialog table td {
+	border: none;
+	background: none;
+}
+
+
+/* .element-nutrition-editor-dialog .new-element */
+.element-nutrition-editor-dialog .new-element input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+.element-nutrition-editor-dialog .new-element .action-addfertilizer {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.element-nutrition-editor-dialog .new-element .action-dropdown {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-radius: 0;
+  border-right: none;
+}
+
+.block-growcalc-element-nutrition .content {
+	margin-top: 0;
+}
+
+#calc-element-nutritions-filter {
+  width: 100%;
+  margin: 0;
+}
+
+.expanded #calc-element-nutritions-filter {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+
+#calc-element-nutritions {
+  box-shadow:1px 1px 3px #eee inset;
+  border: 1px solid #d3d3d3;
+  border-radius: 0 0 5px 5px;
+  background: #fff;
+  padding: 10px;
+  border-top: none;
+
+}
+
+.block-growcalc-element-nutrition {
+  margin: 20px 0;
+  border-radius: 5px 5px 5px 5px;
+  box-shadow: 1px 2px 3px -2px #000000;
+}
+
+
+.list-element-nutritions {
+  padding: 0;
+  margin: 0;
+}
+.list-element-nutritions > li {
+  position: relative;
+  list-style: none;
+  margin: 5px 0;
+  padding: 5px 0;
+  border-top: 1px solid #d3d3d3;
+}
+
+.list-element-nutritions .action-edit {
+  position: absolute;
+  right: 0;
+  top: 0;
+  visibility: hidden;
+}
+
+.list-element-nutritions > li:hover .action-edit {
+  visibility: visible;
+}
+
+.list-element-nutritions ul.elements {
+  margin: 0;
+  padding: 0;
+}
+
+.list-element-nutritions ul.elements > li {
+  display: inline-block;
+  list-style: none;
+  margin: 5px;
+  padding: 0 5px;
+  border: 1px solid #d3d3d3;
+}
+
+/* .element-nutrition-editor-dialog .list-element-nutritions */
+.element-nutrition-editor-dialog .list-element-nutritions input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+.element-nutrition-editor-dialog .list-element-nutritions .action-delete {
+  margin: 0;
+  font-size: 0.9em;
+  vertical-align: bottom;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.element-nutrition-editor-dialog .graph .scroll.vertical {
+  min-height: 300px;
+}

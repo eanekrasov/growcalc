@@ -1,0 +1,168 @@
+/* Tabs CSS
+   --------
+   Adds styles for the primary and secondary tabs.
+*/
+
+.tabs {
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  margin-bottom: 20px;
+}
+
+ul.primary {
+  border-bottom: 1px solid #BBB;
+  margin: 0;
+  padding: 0 3px;
+  li {
+    display: inline-block;
+    position: relative;
+    top: 1px;
+    margin: 0 5px 0 0;
+    vertical-align: top;
+    a {
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      color: #000000;
+      display: block;
+      font-size: 0.929em;
+      height: 1.8em;
+      line-height: 1.9;
+      margin: 0;
+      padding: 0 10px 3px;
+      text-shadow: 0 1px 0 #FFFFFF;
+    }
+  }
+  li.active {
+    border-bottom: 1px solid #FFFFFF;
+    a:hover {
+      border-color: #ccc #ccc #fff;
+      background-color: #FFFFFF;
+    }
+  }
+}
+
+ul.secondary {
+  border-bottom: medium none;
+  padding: 0.5em 0;
+  li {
+    display: inline-block;
+    a {
+      padding: 0.25em 0.5em;
+    }
+    a.active {
+      background: none repeat scroll 0 0 #F2F2F2;
+      border-bottom: medium none;
+      border-radius: 5px 5px 5px 5px;
+    }
+  }
+  li:last-child {
+    border-right: medium none;
+  }
+  li:first-child {
+    padding-left: 0;
+  }
+}
+
+.tabs-original {
+  div.tabs {
+    margin: 0 0 5px 0;
+  }
+
+  ul.primary, ul.secondary {
+    width: 99%;
+  }
+
+  ul.primary {
+    margin: 0;
+    padding: 0 0 0 10px;
+    border-width: 0;
+    list-style: none;
+    white-space: nowrap;
+    line-height: normal;
+    background: url(../images/tabs/tab-bar.png) repeat-x left bottom;
+    li {
+      float: left;
+      margin: 0;
+      padding: 0;
+      &.active {
+        a, a:hover {
+          border-width: 0;
+          color: black;
+          background-color: transparent;
+          background: url(../images/tabs/tab-left.png) no-repeat left 0;
+          .tab {
+            background: url(../images/tabs/tab-right.png) no-repeat right 0;
+          }
+        }
+      }
+      a {
+        display: block;
+        height: 24px;
+        margin: 0;
+        padding: 0 0 0 5px;
+        border-width: 0;
+        font-weigh: bold;
+        text-decoration: none;
+        color: #777777;
+        background-color: transparent;
+        background: url(../images/tabs/tab-left.png) no-repeat left -38px;
+        &:hover {
+          border-width: 0;
+          background-color: transparent;
+          background: url(../images/tabs/tab-left.png) no-repeat left -76px;
+          .tab {
+            background: url(../images/tabs/tab-right.png) no-repeat right -76px;
+          }
+        }
+        .tab {
+          display: block;
+          height: 20px;
+          margin: 0;
+          padding: 4px 13px 0 6px;
+          border-width: 0;
+          line-height: 20px;
+          background: url(../images/tabs/tab-right.png) no-repeat right -38px;
+        }
+      }
+    }
+  }
+
+  ul.secondary {
+    margin: 0;
+    padding: 0 0 0 5px;
+    border-bottom: 1px solid silver;
+    list-style: none;
+    white-space: nowrap;
+    background: url(../images/tabs/tab-secondary-bg.png) repeat-x left bottom;
+    li {
+      float: left;
+      margin: 0 5px 0 0;
+      padding: 5px 0;
+      border-right: none;
+    }
+    a {
+      display: block;
+      height: 24px;
+      margin: 0;
+      padding: 0;
+      border: 1px solid silver;
+      text-decoration: none;
+      color: #777777;
+      background: url(../images/tabs/tab-secondary.png) repeat-x left -56px;
+      .active, .active:hover {
+        border: 1px solid silver;
+        color: black;
+        background: url(../images/tabs/tab-secondary.png) repeat-x left top;
+      }
+      &:hover {
+        background: url(../images/tabs/tab-secondary.png) repeat-x left bottom;
+      }
+      .tab {
+        display: block;
+        height: 18px;
+        margin: 0;
+        padding: 3px 8px;
+        line-height: 18px;
+      }
+    }
+  }
+}

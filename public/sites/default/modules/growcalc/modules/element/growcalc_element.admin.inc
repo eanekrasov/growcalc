@@ -14,8 +14,6 @@
  */
 function growcalc_element_settings() {
   $form = array();
-  
-
   $form = system_settings_form($form);
 
   $form['actions']['create_default_elements'] = array(

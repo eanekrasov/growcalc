@@ -61,7 +61,7 @@ $data = array(
 
   $fertilizers = array();
   foreach($data as &$data_item) {
-    $fertilizer = growcalc_fertilizer_update(growcalc_fertilizer_new(), $data_item);
+    $fertilizer = growcalc_fertilizer_update(growcalc_entity_new('growcalc_fertilizer'), $data_item);
     $fertilizers[$fertilizer->title] = $fertilizer;
   }
 

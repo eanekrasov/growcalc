@@ -1,14 +1,37 @@
-.fertilizer-nutrition-editor {
-
+ul.fertilizer-nutrition-fertilizers {
+	margin: 0 !important;
+	padding: 0 !important;
 }
 
-.fertilizer-nutrition-editor .container {
+ul.fertilizer-nutrition-fertilizers li {
+	display: block;
+	list-style: none;
 }
 
-.fertilizer-nutrition-editor .container ul.fertilizers,
-.fertilizer-nutrition-editor .container ul.elements {
-	width: 50%;
-	float: left;
-	padding: 0;
-	margin: 0;
+ul.fertilizer-nutrition-elements {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+ul.fertilizer-nutrition-elements li {
+	display: block;
+	list-style: none;
+}
+
+
+ul.fertilizer-nutrition-fertilizers .scroll {
+	width: 300px;
+}
+
+ul.fertilizer-nutrition-fertilizers .ember-number-field input {
+  width: 60px;
+}
+
+.fertilizer-nutrition-settings-dialog ul.fertilizer-nutrition-elements .scroll {
+	width: 300px;
+}
+
+
+.fertilizer-nutrition-settings-dialog ul.fertilizer-nutrition-elements .ember-number-field input {
+	width: 60px;
 }
