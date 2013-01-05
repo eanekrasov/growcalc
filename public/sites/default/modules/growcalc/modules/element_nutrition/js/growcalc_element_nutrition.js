@@ -16,6 +16,8 @@
     Name: "",
     Tag: "",
     Elements: [],
+
+    editorView: 'false ;)',
     /**
      * ElementNutrition.UpdateDefaults().
      *
@@ -104,7 +106,7 @@
               return (element.get('Element') === defaultElement.get('Element')) && (element.get('Amount') !== defaultElement.get('Amount'));
             }));
           }))) {
-          isChanged == true;
+          isChanged = true;
         }
       }
 
@@ -205,11 +207,11 @@
      */
     ShowEditorForm: function () {
       var that = this;
-      if (typeof that.editorView === 'undefined') {
-        that.editorView = GrowCalc.ElementNutritionEditorView.create({ content: that, autoOpen: true });
-        that.editorView.appendTo(document);
+      if (typeof that.editorDialog === 'undefined') {
+        that.editorDialog = GrowCalc.ElementNutritionEditorDialog.create({ content: that, autoOpen: true });
+        that.editorDialog.appendTo(document);
       } else {
-        that.editorView.OpenDialog();
+        that.editorDialog.OpenDialog();
       }
     },
     /**
@@ -229,9 +231,9 @@
     },
     DestroyEditorForm: function () {
       var that = this;
-      if (typeof that.editorView !== 'undefined') {
-        that.editorView.CloseDialog();
-        delete that.editorView;
+      if (typeof that.editorDialog !== 'undefined') {
+        that.editorDialog.CloseDialog();
+        delete that.editorDialog;
       }
     },
     DestroyDeleteForm: function () {
@@ -421,7 +423,7 @@
       }
     },
     ElementSelected: function (e, ui) {
-      var that = this._context.content.editorView.get('childViews')[0];
+      var that = this._context.content.editorDialog.get('childViews')[0];
       that.set('ElementSymbol', ui.item.value);
     },
     ElementAutocomplete: function(request, response) {
@@ -439,7 +441,7 @@
     },
   });
 
-  GrowCalc.ElementNutritionEditorView = JQ.Dialog.extend({
+  GrowCalc.ElementNutritionEditorDialog = JQ.Dialog.extend({
     classNames: ['element-nutrition-editor-dialog'],
     width: 560,
     minWidth: 350,
@@ -526,6 +528,20 @@
     }
   });
 
+  GrowCalc.ElementNutritionEditorView = JQ.Dialog.extend({
+    classNames: ['element-nutrition-editor-view'],
+    content: null,
+    template: Ember.Handlebars.compile(
+      '<div><label>Наименование</label>{{view Ember.TextField valueBinding="view.content.Name"}}</div>' +
+      '{{view GrowCalc.NewElementNutritionElementView HostBinding="view.content"}}' +
+      '<div class="graph">' +
+        '{{view GrowCalc.ElementNutritionElementsView contentBinding="view.content.Elements"}}' +
+        '<div class="legend">' +
+          '{{view GrowCalc.ElementNutritionLegendView contentBinding="view.content.Elements"}}' +
+        '</div>' +
+      '</div>'),
+  });
+
   // Массив _всех_ программ питания, доступных пользователю.
   GrowCalc.ElementNutritions = [];
 
@@ -560,6 +576,9 @@
       values['_defaults'].Elements = [];
 
       elnut = GrowCalc.ElementNutrition.create(values);
+      var editorView = GrowCalc.ElementNutritionEditorView.create({ content: elnut })
+      elnut.set('editorView', editorView);
+      editorView.appendTo($('.element-nutrition-editor[data-element-nutrition="' + elnut.get('Id') + '"]'));
 
       GrowCalc.ElementNutritions.pushObject(elnut);
 
@@ -580,7 +599,6 @@
       entity_key;
 
     GrowCalc.elementNutritionsView = GrowCalc.ElementNutritionsView.create({}).appendTo('#calc-element-nutritions');
-
     if (GrowCalc.Drupal().supportLocalStorage) {
       for(i =0, l = localStorage.length; i < l; i++) {
         entity_key = localStorage.key(i);

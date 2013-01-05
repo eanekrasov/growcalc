@@ -2,169 +2,39 @@
 
 /**
  * @file
- * Sets up the base table for our entity and a table to store information about
- * the entity types.
+ * ...
  */
-
-
-/**
- * Implements hook_schema().
- */
-function growcalc_element_program_schema() {
-  $schema = array();
-
-  $schema['growcalc_element_program'] = array(
-    'description' => 'The base table for growcalc_element_program entities.',
-    'fields' => array(
-      'growcalc_element_program_id' => array(
-        'description' => 'Primary Key: Identifier for a growcalc_element_program.',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'type' => array(
-        'description' => 'The {growcalc_element_program_type}.type of this growcalc_element_program.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'language' => array(
-        'description' => 'The language of the growcalc_element_program.',
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'name' => array(
-        'description' => 'The name of the growcalc_element_program - a human-readable identifier.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'description' => array(
-        'description' => 'The description of the growcalc_element_program',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'atomic_mass' => array(
-        'description' => 'Atomic mass',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'oxidation' => array(
-        'description' => 'Oxidation',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'status' => array(
-        'description' => 'Boolean indicating whether the element_program is published (visible to non-administrators).',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 1,
-      ),
-      'color' => array(
-        'description' => 'element_program color.',
-        'type' => 'text',
-        'size' => 'small',
-        'not null' => TRUE,
-      ),
-      'created' => array(
-        'description' => 'The Unix timestamp when the growcalc_element_program was created.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'changed' => array(
-        'description' => 'The Unix timestamp when the growcalc_element_program was most recently saved.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'data' => array(
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big',
-        'serialize' => TRUE,
-        'description' => 'A serialized array of additional data.',
-      ),
-    ),
-    'primary key' => array('growcalc_element_program_id'),
-    'indexes' => array(
-      'type' => array('type'),
-    ),
-  );
-
-  $schema['growcalc_element_program_type'] = array(
-    'description' => 'Stores information about defined growcalc_element_program types.',
-    'fields' => array(
-      'id' => array(
-        'type' => 'serial',
-        'not null' => TRUE,
-        'description' => 'Primary Key: Unique growcalc_element_program type identifier.',
-      ),
-      'type' => array(
-        'description' => 'The machine-readable name of this growcalc_element_program type.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-      'label' => array(
-        'description' => 'The human-readable name of this growcalc_element_program type.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'weight' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'size' => 'tiny',
-        'description' => 'The weight of this growcalc_element_program type in relation to others.',
-      ),
-      'data' => array(
-        'type' => 'text',
-        'not null' => FALSE,
-        'size' => 'big',
-        'serialize' => TRUE,
-        'description' => 'A serialized array of additional data related to this growcalc_element_program type.',
-      ),
-    ) + entity_exportable_schema_fields(),
-    'primary key' => array('id'),
-    'unique keys' => array(
-      'type' => array('type'),
-    ),
-  );
-
-  return $schema;
-}
 
 /**
  * Implements hook_install().
  */
 function growcalc_element_program_install() {
-  // Create the basic growcalc element_program type.
-  $growcalc_element_program_type = growcalc_element_program_type_create(array(
-    'type' => 'growcalc_element_program',
-    'label' => t('Element program'),
-    'weight' => 0,
-    'data' => '',
-    'status' => 1,
-    'module' => 'growcalc_element_program',
-    'is_new' => TRUE
-  ));
-
-  growcalc_element_program_type_save($growcalc_element_program_type);
-
   // During installation, the t() function is unavailable, so we use get_t()
   // to store the name of the translation function.
   $t = get_t();
+
+  // We define the node type as an associative array.
+  $entity_type = array(
+    'type' => 'growcalc_element_program',
+    'name' => $t('Element program'),
+    'base' => 'node_content',
+    'description' => $t('Element program.'),
+    'title_label' => $t('Title'),
+    'custom' => TRUE,
+  );
+
+  // Complete the node type definition by setting any defaults not explicitly
+  // declared above.
+  // http://api.drupal.org/api/function/node_type_set_defaults/7
+  $entity_type = node_type_set_defaults($entity_type);
+
+  //We add a body field and set the body label immediately.
+  //node_add_body_field($entity_type, $t('Description'));
+
+  // Save the content type
+  node_type_save($entity_type);
+
+  drupal_flush_all_caches();
 
   // Create all the fields we are adding to our content type.
   // http://api.drupal.org/api/function/field_create_field/7
@@ -177,105 +47,32 @@ function growcalc_element_program_install() {
   foreach (_growcalc_element_program_installed_instances() as $instance) {
     field_create_instance($instance);
   }
+
+  field_purge_batch(1000);
 }
 
 function _growcalc_element_program_installed_fields() {
   $t = get_t();
   return array(
-    'growcalc_element_program' => array(
-      'field_name' => 'growcalc_element_program',
-      'cardinality' => 1,
+    'growcalc_element_nutritions' => array(
+      'field_name'  => 'growcalc_element_nutritions',
+//      'cardinality' => 1,
       'type'        => 'entityreference',
-      'settings'    => array( 'target_type' => 'growcalc_element_program', ),
+      'settings'    => array( 'target_type' => 'node', 'bundle' => 'growcalc_element_nutrition'),
     ),
 
-    'growcalc_element_stages' => array(
-      'field_name' => 'growcalc_element_stages',
-      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-      'type'        => 'field_collection',
-      'settings'    => array(),
-    ),
-    'stage_name' => array(
-      'field_name' => 'stage_name',
-      'cardinality' => 1,
-      'type'        => 'text',
-      'settings'    => array(),
-    ),
-    'growcalc_stage_elements' => array(
-      'field_name' => 'growcalc_stage_elements',
-      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-      'type'        => 'field_collection',
-      'settings'    => array(),
-    ),
-    'position' => array(
-      'field_name' => 'position',
-      'cardinality' => 1,
-      'type'        => 'number_integer',
-      'settings'    => array(),
-    ),
   );
 }
 
 function _growcalc_element_program_installed_instances() {
   $t = get_t();
   return array(
-    'growcalc_element_stages' => array(
-      'field_name'  => 'growcalc_element_stages',
-      'entity_type' => 'growcalc_element_program',
+    'growcalc_element_nutritions' => array(
+      'field_name'  => 'growcalc_element_nutritions',
+      'entity_type' => 'node',
       'bundle'      => 'growcalc_element_program',
-      'label'       => $t('Element stages'),
-      'widget'      => array(
-        'type'      => 'field_collection_embed',
-      ),
-    ),
-    'stage_name' => array(
-      'field_name'  => 'stage_name',
-      'entity_type' => 'field_collection_item',
-      'bundle'      => 'growcalc_element_stages',
-      'label'       => $t('Name'),
-      'widget'      => array(
-        'type'      => 'text_textfield',
-      ),
-      'required' => TRUE,
-    ),
-    'position' => array(
-      'field_name'  => 'position',
-      'entity_type' => 'field_collection_item',
-      'bundle'      => 'growcalc_element_stages',
-      'label'       => $t('Position'),
-      'widget'      => array(
-        'type'      => 'number',
-      ),
-      //'required' => TRUE,
-    ),
-    'growcalc_stage_elements' => array(
-      'field_name'  => 'growcalc_stage_elements',
-      'entity_type' => 'field_collection_item',
-      'bundle'      => 'growcalc_element_stages',
-      'label'       => $t('Stage elements'),
-      'widget'      => array(
-        'type'      => 'field_collection_embed',
-      ),
-    ),
-    'amount' => array(
-      'field_name'  => 'amount',
-      'entity_type' => 'field_collection_item',
-      'bundle'      => 'growcalc_stage_elements',
-      'label'       => $t('Amount'),
-      'widget'      => array(
-        'type'      => 'number',
-      ),
-      'required' => TRUE,
-    ),
-    'growcalc_element' => array(
-      'field_name'  => 'growcalc_element',
-      'entity_type' => 'field_collection_item',
-      'bundle'      => 'growcalc_stage_elements',
-      'label'       => $t('Element'),
-      'widget'      => array(
-        'type'      => 'options_select',
-      ),
-      'required' => TRUE,
+      'label'       => $t('Element nutritions'),
+      'widget'      => array(),
     ),
   );
 }
@@ -285,22 +82,39 @@ function _growcalc_element_program_installed_instances() {
  * Implements hook_uninstall().
  */
 function growcalc_element_program_uninstall() {
-  foreach (array_reverse(_growcalc_element_program_installed_instances()) as $installed_instance) {
-    $instances = field_info_instances($installed_instance['entity_type'], $installed_instance['bundle']);
-    foreach ($instances as $instance_name => $instance) {
-      if ($instance_name == $installed_instance['field_name']) {
-        field_delete_instance($instance);
-      }
-    }
+  // Gather all the example content that might have been created while this
+  // module was enabled.  Simple selects still use db_query().
+  // http://api.drupal.org/api/function/db_query/7
+  $result = db_query('SELECT nid FROM {node} n WHERE n.type = :type', array(':type' => 'growcalc_element_program'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
   }
 
-  foreach (array_keys(array_reverse(_growcalc_element_program_installed_fields())) as $field) {
+  // Delete all the nodes at once
+  // http://api.drupal.org/api/function/node_delete_multiple/7
+  node_delete_multiple($nids);
+
+  // Loop over each of the fields defined by this module and delete
+  // all instances of the field, their data, and the field itself.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  foreach (array_keys(_growcalc_element_program_installed_fields()) as $field) {
     field_delete_field($field);
   }
 
+  // Loop over any remaining field instances attached to the element
+  // content type (such as the body field) and delete them individually.
+  // http://api.drupal.org/api/function/field_delete_field/7
+  $instances = field_info_instances('node', 'growcalc_element_program');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+
+  // Delete our content type
+  // http://api.drupal.org/api/function/node_type_delete/7
+  node_type_delete('growcalc_element_program');
+
+  // Purge all field infromation
+  // http://api.drupal.org/api/function/field_purge_batch/7
   field_purge_batch(1000);
-  
-  // At uninstall time we'll notify field.module that the entity was deleted
-  // so that attached fields can be cleaned up.
-  field_attach_delete_bundle('growcalc_element_program' , 'growcalc_element_program');
 }
