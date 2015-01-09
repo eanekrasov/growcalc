@@ -100,11 +100,11 @@
 }
 
 .list-element-nutritions ul.elements > li {
-  display: inline-block;
   list-style: none;
-  margin: 5px;
-  padding: 0 5px;
-  border: 1px solid #d3d3d3;
+  margin: 0;
+  padding: 0;
+  line-height: 14px;
+  font-size: 10px;
 }
 
 /* .element-nutrition-editor-dialog .list-element-nutritions */

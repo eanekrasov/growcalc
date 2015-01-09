@@ -6,9 +6,9 @@ dependencies[] = libraries
 
 files[] = jquery_colorpicker.install
 files[] = jquery_colorpicker.module
-; Information added by drupal.org packaging script on 2012-07-19
-version = "7.x-1.0-rc1"
+; Information added by drupal.org packaging script on 2013-01-29
+version = "7.x-1.0-rc2"
 core = "7.x"
 project = "jquery_colorpicker"
-datestamp = "1342714297"
+datestamp = "1359479732"
 

@@ -6,19 +6,19 @@
  */
 
 /**
- * Implementation of hook_permission()
+ * Implements of hook_permission().
  */
 function jquery_colorpicker_permission() {
   return array(
     'administer jquery colorpicker' => array(
       'title' => t('Administer jQuery colorpicker'),
       'description' => t('Allows users to administer the settings for the jQuery colorpicker'),
-    )
+    ),
   );
 }
 
 /**
- * Implementation of hook_menu()
+ * Implements hook_menu().
  */
 function jquery_colorpicker_menu() {
   // This creates the URL for the settings page.
@@ -33,7 +33,7 @@ function jquery_colorpicker_menu() {
 }
 
 /**
- * Implementation of hook_elements()
+ * Implements hook_elements().
  */
 function jquery_colorpicker_element_info() {
   // This is the definition for the new form API element.
@@ -48,15 +48,20 @@ function jquery_colorpicker_element_info() {
 }
 
 /**
- * Implementation of hook_theme()
+ * Implements hook_theme().
  */
 function jquery_colorpicker_theme() {
   return array(
     'jquery_colorpicker' => array(
-      'render element' => 'element'
+      'render element' => 'element',
     ),
     'jquery_colorpicker_color_display' => array(
-      'variables' => array('entity_id' => NULL, 'instance_id' => NULL, 'entity_delta' => NULL, 'item' => NULL),
+      'variables' => array(
+        'entity_id' => NULL,
+        'instance_id' => NULL,
+        'entity_delta' => NULL,
+        'item' => NULL,
+      ),
     ),
     'jquery_colorpicker_text_display' => array(
       'variables' => array('item' => NULL),
@@ -99,7 +104,7 @@ function theme_jquery_colorpicker($variables) {
     'ids' => array($element['#id']),
     'backgrounds' => array($background_url),
     'backgroundColors' => array($default_color),
-    $element['#id'] . '-defaultColor' => $default_color
+    $element['#id'] . '-defaultColor' => $default_color,
   );
 
   // Attach the 3rd party CSS and JS files, and attach the module's JS files.
@@ -164,7 +169,7 @@ function theme_jquery_colorpicker($variables) {
       $output .= '<div>' . l(t('Remove'), '#', array('html' => TRUE, 'attributes' => array('onclick' => 'jQuery(\'#' . $element['#id'] . '\').find(\'input\').val(\'\'); jQuery(\'#' . $element['#id'] . '\').parent().parent().parent().hide(); return false;'))) . '</div>';
     }
     else {
-      $output .= '<div>' . l(t('Clear'), '#', array('html' => TRUE, 'attributes' => array('onclick' => 'jQuery(\'#' . $element['#id'] . '\').find(\'input\').val(\'\'); return false'))) . '</div>';
+      $output .= '<div>' . l(t('Clear'), '#', array('html' => TRUE, 'attributes' => array('onclick' => 'jQuery(\'#' . $element['#id'] . '\').find(\'input\').val(\'\'); jQuery(\'#' . $element['#id'] . ' .color_picker\').css("backgroundColor", "#FFF"); return false'))) . '</div>';
     }
   }
   $output .= '</div>';
@@ -226,7 +231,7 @@ function jquery_colorpicker_settings() {
 }
 
 /**
- * Implementation of hook_field_info()
+ * Implements hook_field_info().
  */
 function jquery_colorpicker_field_info() {
   return array(
@@ -241,7 +246,7 @@ function jquery_colorpicker_field_info() {
 }
 
 /**
- * Implementation of hook_field_validate()
+ * Implements hook_field_validate().
  */
 function jquery_colorpicker_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
   foreach ($items as $delta => $item) {
@@ -272,14 +277,14 @@ function jquery_colorpicker_field_validate($entity_type, $entity, $field, $insta
 }
 
 /**
- * Implementation of hook_field_is_empty
+ * Implements hook_field_is_empty().
  */
 function jquery_colorpicker_field_is_empty($item, $field) {
   return empty($item['jquery_colorpicker']);
 }
 
 /**
- * Implementation of hook_field_formatter_info()
+ * Implements hook_field_formatter_info().
  */
 function jquery_colorpicker_field_formatter_info() {
   return array(
@@ -299,7 +304,7 @@ function jquery_colorpicker_field_formatter_info() {
 }
 
 /**
- * Implementation of hook_field_formatter_view()
+ * Implements hook_field_formatter_view().
  */
 function jquery_colorpicker_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $css_attachment_cache = &drupal_static(__FUNCTION__ . '_css');
@@ -311,16 +316,13 @@ function jquery_colorpicker_field_formatter_view($entity_type, $entity, $field, 
   foreach ($items as $delta => $item) {
     switch ($display['type']) {
       case 'jquery_colorpicker_color_display':
-        if ($entity_type == 'taxonomy_term') {
-          $entity->nid = $entity->tid;
-        }
-        //$element[$delta]['#markup'] = '<div id ="jquery_colorpicker_color_display_' . $entity->nid . '_' . $instance['id'] . '_' . $delta . '" class="jquery_colorpicker_color_display jquery_colorpicker_color_display_' . $instance['id'] . ' jquery_colorpicker_color_display_' . $instance['id'] . '_' . $delta . '_' . $item['jquery_colorpicker'] . '">&nbsp;</div>';
+        $entity_ids = entity_extract_ids($entity_type, $entity);
         $element[$delta] = array(
           '#theme' => 'jquery_colorpicker_color_display',
-          '#entity_id' => $entity->nid,
+          '#entity_id' => $entity_ids[0],
           '#instance_id' => $instance['id'],
           '#entity_delta' => $delta,
-          '#item' => $item['jquery_colorpicker']
+          '#item' => $item['jquery_colorpicker'],
         );
         $css_attachment = array(
           'type' => 'inline',
@@ -335,9 +337,8 @@ function jquery_colorpicker_field_formatter_view($entity_type, $entity, $field, 
       case 'jquery_colorpicker_text_display':
         $element[$delta] = array(
           '#theme' => 'jquery_colorpicker_text_display',
-          '#item' => $item['jquery_colorpicker']
+          '#item' => $item['jquery_colorpicker'],
         );
-//         $element[$delta]['#markup'] = '<div class="jquery_colorpicker_text_display"><span class="jquery_colorpicker_hash_mark">#</span>' . $item['jquery_colorpicker'] . '</div>';
         break;
 
       case 'jquery_colorpicker_raw_hex_display':
@@ -349,7 +350,7 @@ function jquery_colorpicker_field_formatter_view($entity_type, $entity, $field, 
 }
 
 /**
- * Implementation of hook_field_widget_info()
+ * Implements hook_field_widget_info().
  */
 function jquery_colorpicker_field_widget_info() {
   return array(
@@ -361,7 +362,7 @@ function jquery_colorpicker_field_widget_info() {
 }
 
 /**
- * Implementation of hook_widget_form()
+ * Implements hook_widget_form().
  */
 function jquery_colorpicker_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $value = '';
@@ -387,10 +388,16 @@ function jquery_colorpicker_field_widget_form(&$form, &$form_state, $field, $ins
   return $element;
 }
 
+/**
+ * Function that implements theme_jquery_colorpicker_color_display
+ */
 function theme_jquery_colorpicker_color_display($variables) {
   return '<div id ="jquery_colorpicker_color_display_' . $variables['entity_id'] . '_' . $variables['instance_id'] . '_' . $variables['entity_delta'] . '" class="jquery_colorpicker_color_display jquery_colorpicker_color_display_' . $variables['instance_id'] . ' jquery_colorpicker_color_display_' . $variables['instance_id'] . '_' . $variables['entity_delta'] . '_' . $variables['item'] . '">&nbsp;</div>';
 }
 
+/**
+ * Function that implements theme_jquery_colorpicker_text_display
+ */
 function theme_jquery_colorpicker_text_display($variables) {
   return '<div class="jquery_colorpicker_text_display"><span class="jquery_colorpicker_hash_mark">#</span>' . $variables['item'] . '</div>';
 }

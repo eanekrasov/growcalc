@@ -620,7 +620,7 @@
       ElementSymbolBinding: 'content.Element.Symbol',
       contextBinding: 'content',
       template: Ember.Handlebars.compile(
-        '<div class="symbol">{{Element.Symbol}} (мг/л)</div>' +
+        '<!--div class="symbol">{{Element.Symbol}} (мг/л)</div-->' +
         '{{view' +
           ' GrowCalc.ScrollView maxBinding="view.content.Host.MaxElementAmount"' +
           ' valueBinding="view.content.backgroundAmount"' +

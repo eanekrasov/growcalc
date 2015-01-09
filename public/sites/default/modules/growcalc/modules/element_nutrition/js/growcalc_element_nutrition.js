@@ -17,7 +17,7 @@
     Tag: "",
     Elements: [],
 
-    editorView: 'false ;)',
+    editorDialog: 'false ;)',
     /**
      * ElementNutrition.UpdateDefaults().
      *
@@ -528,7 +528,7 @@
     }
   });
 
-  GrowCalc.ElementNutritionEditorView = JQ.Dialog.extend({
+  GrowCalc.ElementNutritionEditorView = Ember.View.extend({
     classNames: ['element-nutrition-editor-view'],
     content: null,
     template: Ember.Handlebars.compile(
@@ -540,6 +540,64 @@
           '{{view GrowCalc.ElementNutritionLegendView contentBinding="view.content.Elements"}}' +
         '</div>' +
       '</div>'),
+  });
+
+
+  GrowCalc.ElementNutritionEditorDialog = JQ.Dialog.extend({
+    width: 600,
+    minWidth: 400,
+    title: "",
+
+    classNames: ['element-nutrition-editor-dialog'],
+    content: null,
+    template: Ember.Handlebars.compile(
+      '{{view Ember.ContainerView currentViewBinding="view.content.editorView"}}'
+    ),
+    buttons: {
+      'Сохранить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.CommitAndClose();
+      },
+      'Отмена': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.RollbackAndClose();
+      },
+      'Удалить': function () {
+        var that = Ember.View.views[$(this).attr('id')];
+        that.content.ShowDeleteForm();
+      },
+    },
+    didInsertElement: function () {
+      var that = this,
+        elnut = that.content;
+      that.set('title', 'Программа питания (элементы) "' + elnut.get('Name') + '"');
+      that._super();
+    },
+    Validate: function () {
+      var retValue = true;
+      var elnut = this.content;
+
+      return retValue;
+    },
+    CommitAndClose: function () {
+      var node = this.content;
+      if (this.Validate()) {
+        node.DestroyEditorForm();
+        node.Commit();
+      }
+    },
+    RollbackAndClose: function () {
+      var element = this.content;
+      element.DestroyEditorForm();
+      element.Rollback();
+    },
+    close: function(event, ui) {
+      var that = Ember.View.views[$(this).attr('id')],
+        node;
+      if ((typeof event !== 'undefined') && (typeof event.cancelable !== 'undefined') && (event.cancelable)) {
+        that.RollbackAndClose();
+      }
+    }
   });
 
   // Массив _всех_ программ питания, доступных пользователю.
@@ -576,9 +634,11 @@
       values['_defaults'].Elements = [];
 
       elnut = GrowCalc.ElementNutrition.create(values);
-      var editorView = GrowCalc.ElementNutritionEditorView.create({ content: elnut })
-      elnut.set('editorView', editorView);
-      editorView.appendTo($('.element-nutrition-editor[data-element-nutrition="' + elnut.get('Id') + '"]'));
+      elnut.set('editorView', GrowCalc.ElementNutritionEditorView.create({ content: elnut }));
+
+      var editorDialog = GrowCalc.ElementNutritionEditorDialog.create({ content: elnut })
+      elnut.set('editorDialog', editorDialog);
+      editorDialog.appendTo($('.element-nutrition-editor[data-element-nutrition="' + elnut.get('Id') + '"]'));
 
       GrowCalc.ElementNutritions.pushObject(elnut);
 

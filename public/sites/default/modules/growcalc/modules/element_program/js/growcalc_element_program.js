@@ -378,15 +378,14 @@
   GrowCalc.ElementProgramEditorView = Ember.View.extend({
     classNames: ['element-program-editor-dialog'],
     content: null,
+    ActiveElementNutrition: null,
     template: Ember.Handlebars.compile(
       '<div><label>Заголовок</label>{{view Ember.TextField valueBinding="view.content.Title"}}</div>' +
       '<div><label>Питания</label></div>' +
-      '<ul class="element-nutritions">' +
-        '{{#each item in view.content.ElementNutritions}}' +
-          //'<li>{{View Ember.ContainerView currentViewBinding="item.editorView"}}</li>' +
-          //'<li>{{view Ember.TextField valueBinding="item.editorView"}}</li>' +
-        '{{/each}}' +
-      '</ul>' +
+      '{{#each item in view.content.ElementNutritions}}' +
+        '{{item.Name}}' +
+        '<div class="active-element-nutrition">{{view Ember.ContainerView currentViewBinding="item.editorView"}}</div>' +
+      '{{/each}}' +
       '<button class="btn action action-commit" {{action "Commit" target on="click"}} title="Сохранить">Сохранить</button>' +
       '<button class="btn action action-rollback" {{action "Rollback" target on="click"}} title="Отменить">Отменить</button>'
     ),
@@ -404,6 +403,10 @@
     },
     Calc: function () {
       this.content.Calc();
+    },
+    didInsertElement: function () {
+      this._super();
+      //this.set('ActiveElementNutrition', GrowCalc.ElementNutritionEditorView.create({content: this.content.ElementNutritions[0]}));
     },
   });
 

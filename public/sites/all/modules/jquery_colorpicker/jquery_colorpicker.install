@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_requirements()
+ * Implements hook_requirements()
  */
 function jquery_colorpicker_requirements($phase) {
   $errors = array();
@@ -86,7 +86,7 @@ function jquery_colorpicker_requirements($phase) {
     if (!function_exists('libraries_get_path')) {
       module_load_include('module', 'libraries');
     }
-    $path = libraries_get_path('colorpicker');
+    $path = libraries_get_path('colorpicker') ? libraries_get_path('colorpicker') : 'sites/all/libraries/colorpicker';
     // The first file we check is the 3rd party integration. Without this file, the module will not work. Other.
     // files are also required, but the assumption is made that if they got this file, they will have gotten all the other files.
     // This is done to keep code relatively streamlined.
@@ -117,7 +117,7 @@ function jquery_colorpicker_requirements($phase) {
 }
 
 /**
- * Implementation of hook_field_schema()
+ * Implements hook_field_schema()
  */
 function jquery_colorpicker_field_schema($field) {
   $columns = array(
